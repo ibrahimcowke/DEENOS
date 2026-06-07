@@ -45,7 +45,7 @@ interface DeenState {
   setUserId: (id: string) => void;
   syncSpiritualData: () => Promise<void>;
   logPrayer: (prayerName: string, status: PrayerLog['status'], date: string) => void;
-  updateQuranProgress: (pages: number, surah: number, ayah: number) => void;
+  updateQuranProgress: (amount: number, surah: number, ayah: number, mode: 'pages' | 'ayahs') => void;
   logDhikr: (name: string, count: number, date: string) => void;
   addXp: (amount: number) => void;
   getDeenScore: () => number;
@@ -199,11 +199,22 @@ export const useDeenStore = create<DeenState>((set, get) => {
       }
     },
 
-    updateQuranProgress: (pages: number, surah: number, ayah: number) => {
+    updateQuranProgress: (amount: number, surah: number, ayah: number, mode: 'pages' | 'ayahs') => {
       const current = get().quranProgress;
+      let pagesAdded = 0;
+      let xpEarned = 0;
+
+      if (mode === 'pages') {
+        pagesAdded = amount;
+        xpEarned = amount * 15;
+      } else {
+        pagesAdded = Math.max(1, Math.round(amount / 15));
+        xpEarned = amount * 1; // 1 XP per Ayah
+      }
+
       const updated = {
         ...current,
-        pagesRead: current.pagesRead + pages,
+        pagesRead: current.pagesRead + pagesAdded,
         lastSurah: surah,
         lastAyah: ayah
       };
@@ -220,7 +231,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
         total_pages_read: updated.pagesRead
       });
 
-      get().addXp(pages * 15);
+      get().addXp(xpEarned);
       get().unlockAchievement('quran_start');
     },
 

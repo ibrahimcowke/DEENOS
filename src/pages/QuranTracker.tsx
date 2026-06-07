@@ -7,13 +7,16 @@ export const QuranTracker: React.FC = () => {
   const { t } = useTranslation();
   const { quranProgress, updateQuranProgress } = useDeenStore();
 
+  const [logMode, setLogMode] = useState<'pages' | 'ayahs'>('pages');
   const [pagesLog, setPagesLog] = useState<number>(1);
+  const [ayahsLog, setAyahsLog] = useState<number>(10);
   const [surahLog, setSurahLog] = useState<number>(quranProgress.lastSurah);
   const [ayahLog, setAyahLog] = useState<number>(quranProgress.lastAyah);
 
   const handleLogProgress = (e: React.FormEvent) => {
     e.preventDefault();
-    updateQuranProgress(pagesLog, surahLog, ayahLog);
+    const logValue = logMode === 'pages' ? pagesLog : ayahsLog;
+    updateQuranProgress(logValue, surahLog, ayahLog, logMode);
   };
 
   // Mock Quran Goals representation
@@ -29,25 +32,68 @@ export const QuranTracker: React.FC = () => {
         
         {/* Left: Logger Form */}
         <div className="lg:col-span-2 glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40">
-          <div className="flex items-center gap-2 mb-6">
-            <BookOpen className="text-primary" size={24} />
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-text-primary">{t('quran.tracker_title')}</h2>
-              <p className="text-xs text-text-secondary mt-0.5">{t('quran.add_progress')}</p>
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex items-center gap-2">
+              <BookOpen className="text-primary" size={24} />
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-text-primary">{t('quran.tracker_title')}</h2>
+                <p className="text-xs text-text-secondary mt-0.5">{t('quran.add_progress')}</p>
+              </div>
+            </div>
+            
+            {/* Mode Selection Toggle */}
+            <div className="flex bg-bg-primary/80 border border-border-color p-0.5 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setLogMode('pages')}
+                className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                  logMode === 'pages'
+                    ? 'bg-primary text-white shadow'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                By Pages
+              </button>
+              <button
+                type="button"
+                onClick={() => setLogMode('ayahs')}
+                className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                  logMode === 'ayahs'
+                    ? 'bg-primary text-white shadow'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                By Ayat
+              </button>
             </div>
           </div>
 
           <form onSubmit={handleLogProgress} className="grid grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-semibold text-text-secondary block mb-1">Pages Read</label>
-              <input
-                type="number"
-                min="1"
-                max="604"
-                value={pagesLog}
-                onChange={(e) => setPagesLog(Math.max(1, parseInt(e.target.value) || 1))}
-                className="px-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center"
-              />
+              {logMode === 'pages' ? (
+                <>
+                  <label className="text-xs font-semibold text-text-secondary block mb-1">Pages Read</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="604"
+                    value={pagesLog}
+                    onChange={(e) => setPagesLog(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="px-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center"
+                  />
+                </>
+              ) : (
+                <>
+                  <label className="text-xs font-semibold text-text-secondary block mb-1">Ayat Read</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={ayahsLog}
+                    onChange={(e) => setAyahsLog(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="px-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center"
+                  />
+                </>
+              )}
             </div>
             <div>
               <label className="text-xs font-semibold text-text-secondary block mb-1">Last Surah Number</label>
@@ -76,7 +122,9 @@ export const QuranTracker: React.FC = () => {
               className="col-span-3 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition hover:scale-[1.01] shadow-md mt-2 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <PlusCircle size={14} />
-              Log Quran Progress (15 XP / Page)
+              {logMode === 'pages'
+                ? `Log Quran Progress (+${pagesLog * 15} XP / 15 XP per Page)`
+                : `Log Quran Progress (+${ayahsLog * 1} XP / 1 XP per Ayah)`}
             </button>
           </form>
 
