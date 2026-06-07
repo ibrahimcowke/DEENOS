@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS public.prayer_logs (
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     prayer_date DATE NOT NULL DEFAULT CURRENT_DATE,
     prayer_name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('completed', 'mosque', 'congregation', 'missed', 'delayed')),
+    status TEXT NOT NULL CHECK (status IN ('completed', 'mosque', 'congregation', 'missed', 'delayed', 'outside')),
     logged_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT unique_user_prayer_date UNIQUE(user_id, prayer_date, prayer_name)
 );

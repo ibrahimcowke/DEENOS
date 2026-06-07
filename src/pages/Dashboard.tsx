@@ -29,7 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
       setLoadingAi(true);
       const today = new Date().toISOString().split('T')[0];
       const completedToday = prayerLogs
-        .filter(l => l.date === today && (l.status === 'completed' || l.status === 'mosque' || l.status === 'congregation'))
+        .filter(l => l.date === today && (l.status === 'completed' || l.status === 'outside' || l.status === 'mosque' || l.status === 'congregation'))
         .map(l => l.prayer_name);
       
       try {

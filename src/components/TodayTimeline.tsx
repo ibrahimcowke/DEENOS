@@ -37,7 +37,7 @@ export const TodayTimeline: React.FC = () => {
   // Add prayers
   prayerTimes.forEach((p) => {
     const log = prayerLogs.find((l: PrayerLog) => l.date === today && l.prayer_name === p.key);
-    const completed = log && (log.status === 'completed' || log.status === 'mosque' || log.status === 'congregation' || log.status === 'delayed');
+    const completed = log && (log.status === 'completed' || log.status === 'outside' || log.status === 'mosque' || log.status === 'congregation' || log.status === 'delayed');
     
     items.push({
       id: `prayer-${p.key}`,

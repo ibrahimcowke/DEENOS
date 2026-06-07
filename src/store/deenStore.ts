@@ -4,7 +4,7 @@ import { dbService, isSupabaseConfigured } from '../services/supabase';
 
 export interface PrayerLog {
   prayer_name: string;
-  status: 'completed' | 'mosque' | 'congregation' | 'missed' | 'delayed';
+  status: 'completed' | 'mosque' | 'congregation' | 'missed' | 'delayed' | 'outside';
   date: string;
 }
 
@@ -176,7 +176,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
       dbService.logPrayer(get().userId, prayerName, status, date);
 
       let xpEarned = 0;
-      if (status === 'completed') xpEarned = 10;
+      if (status === 'completed' || status === 'outside') xpEarned = 10;
       else if (status === 'congregation') xpEarned = 15;
       else if (status === 'mosque') xpEarned = 25;
       else if (status === 'delayed') xpEarned = 5;
@@ -192,7 +192,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
       }
 
       const prayersToday = updatedLogs.filter(
-        (log: PrayerLog) => log.date === date && (log.status === 'completed' || log.status === 'mosque' || log.status === 'congregation')
+        (log: PrayerLog) => log.date === date && (log.status === 'completed' || log.status === 'outside' || log.status === 'mosque' || log.status === 'congregation')
       );
       if (prayersToday.length === 5) {
         get().unlockAchievement('five_prayers_day');
@@ -302,7 +302,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
       const todayDhikr = get().dhikrLogs.filter((log: DhikrLog) => log.date === today);
       
       const positiveSalahCount = todayLogs.filter(
-        (log: PrayerLog) => log.status === 'completed' || log.status === 'mosque' || log.status === 'congregation' || log.status === 'delayed'
+        (log: PrayerLog) => log.status === 'completed' || log.status === 'outside' || log.status === 'mosque' || log.status === 'congregation' || log.status === 'delayed'
       ).length;
       const salahScore = Math.min(50, positiveSalahCount * 10);
 

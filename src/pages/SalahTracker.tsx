@@ -42,6 +42,7 @@ export const SalahTracker: React.FC = () => {
     { name: 'Mosque', value: 12 },
     { name: 'Congregation', value: 8 },
     { name: 'Home', value: 15 },
+    { name: 'Outside', value: 6 },
     { name: 'Delayed', value: 3 },
     { name: 'Missed', value: 2 }
   ];
@@ -57,6 +58,8 @@ export const SalahTracker: React.FC = () => {
         return 'bg-teal-600 text-white border-teal-700 shadow';
       case 'completed':
         return 'bg-primary text-white border-primary-hover shadow';
+      case 'outside':
+        return 'bg-blue-600 text-white border-blue-700 shadow';
       case 'delayed':
         return 'bg-amber-500 text-white border-amber-600 shadow';
       case 'missed':
@@ -111,6 +114,12 @@ export const SalahTracker: React.FC = () => {
                     className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${getStatusStyle(activeStatus, 'completed')}`}
                   >
                     Home (10XP)
+                  </button>
+                  <button 
+                    onClick={() => handleLog(p.key, 'outside')}
+                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${getStatusStyle(activeStatus, 'outside')}`}
+                  >
+                    Outside (10XP)
                   </button>
                   <button 
                     onClick={() => handleLog(p.key, 'delayed')}
