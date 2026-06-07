@@ -10,6 +10,7 @@ export interface Subscription {
   billingCycle: 'monthly' | 'yearly' | 'weekly';
   nextBillingDate: string;
   status: 'active' | 'paused' | 'cancelled';
+  isTrial: boolean;
 }
 
 export interface Expense {
@@ -39,7 +40,7 @@ interface FinanceState {
   
   // Actions
   syncFinanceData: () => Promise<void>;
-  addSubscription: (name: string, price: number, cycle: Subscription['billingCycle'], nextBillingDate: string) => void;
+  addSubscription: (name: string, price: number, cycle: Subscription['billingCycle'], nextBillingDate: string, isTrial: boolean) => void;
   deleteSubscription: (id: string) => void;
   toggleSubscriptionStatus: (id: string) => void;
   addExpense: (amount: number, category: Expense['category'], description: string, date: string) => void;
@@ -92,7 +93,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => {
           currency: s.currency,
           billingCycle: s.billing_cycle,
           nextBillingDate: s.next_billing_date,
-          status: s.status
+          status: s.status,
+          isTrial: !!s.is_trial
         }));
 
         const expsMapped: Expense[] = exps.map((e: any) => ({
@@ -128,7 +130,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => {
       }
     },
 
-    addSubscription: async (name: string, price: number, cycle: Subscription['billingCycle'], nextBillingDate: string) => {
+    addSubscription: async (name: string, price: number, cycle: Subscription['billingCycle'], nextBillingDate: string, isTrial: boolean) => {
       const uId = useDeenStore.getState().userId;
       const newSub: Omit<Subscription, 'id'> = {
         name,
@@ -136,7 +138,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => {
         currency: 'USD',
         billingCycle: cycle,
         nextBillingDate,
-        status: 'active'
+        status: 'active',
+        isTrial
       };
 
       if (isSupabaseConfigured && uId !== 'offline-servant-user') {
@@ -146,7 +149,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => {
           currency: 'USD',
           billing_cycle: cycle,
           next_billing_date: nextBillingDate,
-          status: 'active'
+          status: 'active',
+          is_trial: isTrial
         });
         if (response.success && response.data) {
           const finalSub: Subscription = {

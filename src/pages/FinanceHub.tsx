@@ -19,6 +19,7 @@ export const FinanceHub: React.FC = () => {
   const [subPrice, setSubPrice] = useState(0);
   const [subCycle, setSubCycle] = useState<Subscription['billingCycle']>('monthly');
   const [subDate, setSubDate] = useState('');
+  const [isTrial, setIsTrial] = useState(false);
   const [showAddSub, setShowAddSub] = useState(false);
 
   // Form states for Expenses
@@ -33,7 +34,7 @@ export const FinanceHub: React.FC = () => {
   const [loadingAi, setLoadingAi] = useState(false);
 
   const totalMonthlySubCost = subscriptions
-    .filter(s => s.status === 'active')
+    .filter(s => s.status === 'active' && !s.isTrial)
     .reduce((acc, s) => {
       if (s.billingCycle === 'yearly') return acc + (s.price / 12);
       if (s.billingCycle === 'weekly') return acc + (s.price * 4);
@@ -60,11 +61,12 @@ export const FinanceHub: React.FC = () => {
 
   const handleAddSub = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subName.trim() || subPrice <= 0 || !subDate) return;
-    addSubscription(subName, subPrice, subCycle, subDate);
+    if (!subName.trim() || subPrice < 0 || !subDate) return;
+    addSubscription(subName, subPrice, subCycle, subDate, isTrial);
     setSubName('');
     setSubPrice(0);
     setSubDate('');
+    setIsTrial(false);
     setShowAddSub(false);
   };
 
@@ -179,9 +181,21 @@ export const FinanceHub: React.FC = () => {
                     required
                   />
                 </div>
+                <div className="col-span-2 flex items-center gap-2 py-1">
+                  <input
+                    type="checkbox"
+                    id="isTrial"
+                    checked={isTrial}
+                    onChange={(e) => setIsTrial(e.target.checked)}
+                    className="w-4 h-4 rounded border-border-color text-primary bg-bg-primary focus:ring-primary focus:ring-2 accent-primary cursor-pointer"
+                  />
+                  <label htmlFor="isTrial" className="text-[10px] font-bold text-text-secondary select-none cursor-pointer">
+                    This is a Free Trial (charges start after renewal date)
+                  </label>
+                </div>
                 <div className="col-span-2 flex gap-2 pt-2">
                   <button type="submit" className="flex-1 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition">Save</button>
-                  <button type="button" onClick={() => setShowAddSub(false)} className="px-4 py-2 border border-border-color rounded-xl text-xs font-bold text-text-secondary hover:bg-bg-tertiary">Cancel</button>
+                  <button type="button" onClick={() => { setShowAddSub(false); setIsTrial(false); }} className="px-4 py-2 border border-border-color rounded-xl text-xs font-bold text-text-secondary hover:bg-bg-tertiary">Cancel</button>
                 </div>
               </form>
             )}
@@ -195,14 +209,30 @@ export const FinanceHub: React.FC = () => {
                       {sub.name.charAt(0)}
                     </div>
                     <div>
-                      <span className="text-sm font-extrabold text-text-primary block">{sub.name}</span>
-                      <span className="text-[10px] text-text-muted mt-0.5 block">Renewal: {sub.nextBillingDate} • Cycle: {sub.billingCycle}</span>
+                      <span className="text-sm font-extrabold text-text-primary flex items-center gap-2">
+                        {sub.name}
+                        {sub.isTrial && (
+                          <span className="text-[8px] uppercase font-extrabold bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded-md">
+                            Free Trial
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10px] text-text-muted mt-0.5 block">
+                        {sub.isTrial ? 'Trial Ends' : 'Renewal'}: {sub.nextBillingDate} • Cycle: {sub.billingCycle}
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <span className="text-sm font-extrabold text-text-primary block">${sub.price}</span>
+                      <span className="text-sm font-extrabold text-text-primary block">
+                        {sub.isTrial && sub.status === 'active' ? '$0.00' : `$${sub.price}`}
+                      </span>
+                      {sub.isTrial && sub.status === 'active' && (
+                        <span className="text-[8px] text-text-muted block">
+                          then ${sub.price}/{sub.billingCycle.replace('ly', '')}
+                        </span>
+                      )}
                       <button
                         onClick={() => toggleSubscriptionStatus(sub.id)}
                         className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 block hover:underline cursor-pointer ${

@@ -202,6 +202,7 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     billing_cycle TEXT DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly', 'yearly', 'weekly')),
     next_billing_date DATE NOT NULL,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'paused', 'cancelled')),
+    is_trial BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
