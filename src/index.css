@@ -38,7 +38,7 @@
    ========================================================================== */
 
 /* --- Default theme: Emerald Night (Light) --- */
-:root {
+:root, [data-theme="emerald-night"] {
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f1f5f9;
@@ -57,7 +57,7 @@
   --info: #3b82f6;
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-border: rgba(255, 255, 255, 0.5);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+  --glass-shadow: 0 8px 32px 0 rgba(16, 185, 129, 0.04);
 }
 
 /* --- Emerald Night (Dark) --- */
@@ -103,6 +103,7 @@
   --info: #3b82f6;
   --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(237, 231, 219, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(194, 152, 69, 0.04);
 }
 
 [data-theme="gold-crescent"][data-color-scheme="dark"] {
@@ -124,6 +125,7 @@
   --info: #60a5fa;
   --glass-bg: rgba(20, 18, 16, 0.7);
   --glass-border: rgba(43, 39, 34, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 /* --- Midnight Sapphire (Light) --- */
@@ -146,6 +148,7 @@
   --info: #3b82f6;
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(218, 227, 245, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(37, 99, 235, 0.04);
 }
 
 [data-theme="midnight-sapphire"][data-color-scheme="dark"] {
@@ -167,6 +170,7 @@
   --info: #60a5fa;
   --glass-bg: rgba(15, 23, 42, 0.7);
   --glass-border: rgba(51, 65, 85, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 /* --- Pearl Light (Light & Dark) --- */
@@ -189,6 +193,7 @@
   --info: #2563eb;
   --glass-bg: rgba(255, 255, 255, 0.9);
   --glass-border: rgba(229, 229, 229, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.02);
 }
 
 [data-theme="pearl-light"][data-color-scheme="dark"] {
@@ -210,6 +215,7 @@
   --info: #60a5fa;
   --glass-bg: rgba(24, 24, 27, 0.7);
   --glass-border: rgba(39, 39, 42, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
 /* --- Ramadan Gold (Light) --- */
@@ -232,6 +238,7 @@
   --info: #3b82f6;
   --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(238, 221, 204, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(217, 119, 6, 0.05);
 }
 
 [data-theme="ramadan-gold"][data-color-scheme="dark"] {
@@ -253,6 +260,7 @@
   --info: #60a5fa;
   --glass-bg: rgba(19, 16, 36, 0.7);
   --glass-border: rgba(44, 38, 83, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
 /* ==========================================================================
