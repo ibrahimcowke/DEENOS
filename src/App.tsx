@@ -15,6 +15,7 @@ import { JournalPage } from './pages/JournalPage';
 import { AICoachPage } from './pages/AICoachPage';
 import { RamadanPage } from './pages/RamadanPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { CommunityPage } from './pages/CommunityPage';
 
 import { useDeenStore } from './store/deenStore';
 import { useHabitStore } from './store/habitStore';
@@ -62,6 +63,8 @@ function App() {
         return <AICoachPage />;
       case 'ramadan':
         return <RamadanPage />;
+      case 'community':
+        return <CommunityPage />;
       case 'profile':
         return <ProfilePage />;
       default:

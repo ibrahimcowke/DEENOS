@@ -3,7 +3,7 @@ import { useUIStore } from '../store/uiStore';
 import { useDeenStore } from '../store/deenStore';
 import { 
   LayoutDashboard, BookOpen, Compass, Leaf, Wallet, Target, PenTool, 
-  MessageSquare, Moon, Sun, Globe, MoonStar, Settings, ChevronLeft, ChevronRight, Bell, Sparkles
+  MessageSquare, Moon, Sun, Globe, MoonStar, Settings, ChevronLeft, ChevronRight, Bell, Sparkles, Users
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -34,6 +34,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, set
     { id: 'finances', label: t('common.finances'), icon: Wallet },
     { id: 'goals', label: t('common.goals'), icon: Target },
     { id: 'journal', label: t('common.journal'), icon: PenTool },
+    { id: 'community', label: t('common.community'), icon: Users },
     { id: 'ai-coach', label: t('common.ai_coach'), icon: MessageSquare }
   ];
 
