@@ -14,6 +14,8 @@ interface UIState {
     goals: string[];
     learningStyle: string;
     reminderPref: string;
+    translationPref?: string;
+    notificationTone?: string;
   };
   
   // Actions
@@ -50,7 +52,9 @@ const INITIAL_STATE = getStoredUIState() || {
     fullName: 'Muslim Brother/Sister',
     goals: [],
     learningStyle: 'visual',
-    reminderPref: 'push'
+    reminderPref: 'push',
+    translationPref: 'sahih',
+    notificationTone: 'soft'
   }
 };
 
@@ -141,7 +145,9 @@ export const useUIStore = create<UIState>((set, get) => {
           fullName: 'Muslim Brother/Sister',
           goals: [],
           learningStyle: 'visual',
-          reminderPref: 'push'
+          reminderPref: 'push',
+          translationPref: 'sahih',
+          notificationTone: 'soft'
         }
       });
       localStorage.removeItem('deenos_ui_state');
