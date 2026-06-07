@@ -1,0 +1,337 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border-color: var(--border-color);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-glow: var(--primary-glow);
+  --color-accent: var(--accent);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  
+  --font-display: 'Outfit', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-spin-slow: spin 12s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ==========================================================================
+   THEME DEFINITIONS
+   ========================================================================== */
+
+/* --- Default theme: Emerald Night (Light) --- */
+:root {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --primary-glow: rgba(16, 185, 129, 0.15);
+  --accent: #d97706;
+  --accent-secondary: #fbbf24;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+}
+
+/* --- Emerald Night (Dark) --- */
+[data-theme="emerald-night"][data-color-scheme="dark"] {
+  --bg-primary: #060e0b;
+  --bg-secondary: #0c1814;
+  --bg-tertiary: #13241e;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #1a2f27;
+  --primary: #10b981;
+  --primary-hover: #34d399;
+  --primary-glow: rgba(16, 185, 129, 0.25);
+  --accent: #fbbf24;
+  --accent-secondary: #f59e0b;
+  --success: #10b981;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --glass-bg: rgba(12, 24, 20, 0.7);
+  --glass-border: rgba(26, 47, 39, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* --- Gold Crescent (Light) --- */
+[data-theme="gold-crescent"] {
+  --bg-primary: #fcfbfa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f5f2eb;
+  --text-primary: #2d261e;
+  --text-secondary: #5c5246;
+  --text-muted: #9e9180;
+  --border-color: #ede7db;
+  --primary: #c29845;
+  --primary-hover: #a17b34;
+  --primary-glow: rgba(194, 152, 69, 0.15);
+  --accent: #10b981;
+  --accent-secondary: #059669;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(237, 231, 219, 0.5);
+}
+
+[data-theme="gold-crescent"][data-color-scheme="dark"] {
+  --bg-primary: #0b0a09;
+  --bg-secondary: #141210;
+  --bg-tertiary: #1f1c18;
+  --text-primary: #f5f2eb;
+  --text-secondary: #a3998e;
+  --text-muted: #6e655c;
+  --border-color: #2b2722;
+  --primary: #fbbf24;
+  --primary-hover: #fcd34d;
+  --primary-glow: rgba(251, 191, 36, 0.25);
+  --accent: #34d399;
+  --accent-secondary: #10b981;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --glass-bg: rgba(20, 18, 16, 0.7);
+  --glass-border: rgba(43, 39, 34, 0.5);
+}
+
+/* --- Midnight Sapphire (Light) --- */
+[data-theme="midnight-sapphire"] {
+  --bg-primary: #f4f6fc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e9effb;
+  --text-primary: #0f1c3f;
+  --text-secondary: #4a5c8c;
+  --text-muted: #8c9cb8;
+  --border-color: #dae3f5;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-glow: rgba(37, 99, 235, 0.15);
+  --accent: #8b5cf6;
+  --accent-secondary: #c084fc;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(218, 227, 245, 0.5);
+}
+
+[data-theme="midnight-sapphire"][data-color-scheme="dark"] {
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #334155;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-glow: rgba(59, 130, 246, 0.25);
+  --accent: #a78bfa;
+  --accent-secondary: #c084fc;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(51, 65, 85, 0.5);
+}
+
+/* --- Pearl Light (Light & Dark) --- */
+[data-theme="pearl-light"] {
+  --bg-primary: #fcfcfc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f5f5f5;
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-muted: #a3a3a3;
+  --border-color: #e5e5e5;
+  --primary: #18181b;
+  --primary-hover: #27272a;
+  --primary-glow: rgba(24, 24, 27, 0.1);
+  --accent: #ca8a04;
+  --accent-secondary: #eab308;
+  --success: #16a34a;
+  --warning: #ca8a04;
+  --danger: #dc2626;
+  --info: #2563eb;
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(229, 229, 229, 0.5);
+}
+
+[data-theme="pearl-light"][data-color-scheme="dark"] {
+  --bg-primary: #0e0e11;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+  --border-color: #27272a;
+  --primary: #fafafa;
+  --primary-hover: #f4f4f5;
+  --primary-glow: rgba(250, 250, 250, 0.2);
+  --accent: #facc15;
+  --accent-secondary: #ca8a04;
+  --success: #4ade80;
+  --warning: #facc15;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --glass-bg: rgba(24, 24, 27, 0.7);
+  --glass-border: rgba(39, 39, 42, 0.5);
+}
+
+/* --- Ramadan Gold (Light) --- */
+[data-theme="ramadan-gold"] {
+  --bg-primary: #fdfaf7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f7ede2;
+  --text-primary: #4a2f13;
+  --text-secondary: #7d5a36;
+  --text-muted: #ab8e72;
+  --border-color: #eeddcc;
+  --primary: #d97706;
+  --primary-hover: #b45309;
+  --primary-glow: rgba(217, 119, 6, 0.15);
+  --accent: #7c3aed;
+  --accent-secondary: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(238, 221, 204, 0.5);
+}
+
+[data-theme="ramadan-gold"][data-color-scheme="dark"] {
+  --bg-primary: #0a0814;
+  --bg-secondary: #131024;
+  --bg-tertiary: #1f1b3a;
+  --text-primary: #eeddcc;
+  --text-secondary: #b5a9cd;
+  --text-muted: #746c92;
+  --border-color: #2c2653;
+  --primary: #f59e0b;
+  --primary-hover: #fbbf24;
+  --primary-glow: rgba(245, 158, 11, 0.25);
+  --accent: #a78bfa;
+  --accent-secondary: #8b5cf6;
+  --success: #34d399;
+  --warning: #f59e0b;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --glass-bg: rgba(19, 16, 36, 0.7);
+  --glass-border: rgba(44, 38, 83, 0.5);
+}
+
+/* ==========================================================================
+   GLOBAL STYLES & INTERFACE BOILERPLATE
+   ========================================================================== */
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* Glassmorphism Classes */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* RTL Helpers */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .ltr-only {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Neon accents */
+.neon-glow {
+  box-shadow: 0 0 15px var(--primary-glow);
+}
+
+.orb-glow {
+  filter: drop-shadow(0 0 20px var(--primary-glow));
+}
