@@ -213,7 +213,7 @@ export const SalahTracker: React.FC = () => {
             {t('salah.weekly_trends')}
           </h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <AreaChart data={weeklyAnalyticsData}>
                 <defs>
                   <linearGradient id="salahGlow" x1="0" y1="0" x2="0" y2="1">
@@ -238,7 +238,7 @@ export const SalahTracker: React.FC = () => {
             Prayer Location Distribution
           </h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={prayerDistributionData}>
                 <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={10} tickLine={false} />
                 <YAxis stroke="var(--text-muted)" fontSize={10} tickLine={false} />

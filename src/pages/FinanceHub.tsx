@@ -441,7 +441,7 @@ export const FinanceHub: React.FC = () => {
                 {chartData.length === 0 ? (
                   <p className="text-xs text-text-muted text-center pt-24">No expenses logged to display charts.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={chartData}>
                       <XAxis dataKey="category" stroke="var(--text-muted)" fontSize={9} tickLine={false} />
                       <YAxis stroke="var(--text-muted)" fontSize={9} tickLine={false} />
