@@ -3,7 +3,6 @@ import { useUIStore } from './store/uiStore';
 import { MainLayout } from './layouts/MainLayout';
 
 // Pages
-import { Login } from './pages/Login';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { SalahTracker } from './pages/SalahTracker';
@@ -23,33 +22,17 @@ import { useFinanceStore } from './store/financeStore';
 
 function App() {
   const { onboarded } = useUIStore();
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    localStorage.getItem('deenos_user_authenticated') === 'true'
-  );
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  // Handle custom auth updates from other pages
-  useEffect(() => {
-    const handleAuthChange = () => {
-      setIsAuthenticated(localStorage.getItem('deenos_user_authenticated') === 'true');
-    };
-    window.addEventListener('deenos_auth_change', handleAuthChange);
-    return () => window.removeEventListener('deenos_auth_change', handleAuthChange);
-  }, []);
 
   // Sync data with Supabase DDL on load
   useEffect(() => {
-    if (isAuthenticated && onboarded) {
+    if (onboarded) {
       useDeenStore.getState().syncSpiritualData();
       useHabitStore.getState().syncHabitsData();
       useFinanceStore.getState().syncFinanceData();
     }
-  }, [isAuthenticated, onboarded]);
+  }, [onboarded]);
 
-  // 1. Auth Routing
-  if (!isAuthenticated) {
-    return <Login />;
-  }
 
   // 2. Onboarding Routing
   if (!onboarded) {
