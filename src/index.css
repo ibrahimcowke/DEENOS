@@ -218,6 +218,51 @@
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
+/* --- Pure White (Light & Dark) --- */
+[data-theme="pure-white"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8fafc;
+  --text-primary: #000000;
+  --text-secondary: #334155;
+  --text-muted: #94a3b8;
+  --border-color: #f1f5f9;
+  --primary: #0f172a;
+  --primary-hover: #000000;
+  --primary-glow: rgba(15, 23, 42, 0.08);
+  --accent: #10b981;
+  --accent-secondary: #34d399;
+  --success: #10b981;
+  --warning: #fbbf24;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(241, 245, 249, 0.8);
+  --glass-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="pure-white"][data-color-scheme="dark"] {
+  --bg-primary: #000000;
+  --bg-secondary: #000000;
+  --bg-tertiary: #0a0a0a;
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #64748b;
+  --border-color: #1e293b;
+  --primary: #ffffff;
+  --primary-hover: #f1f5f9;
+  --primary-glow: rgba(255, 255, 255, 0.15);
+  --accent: #34d399;
+  --accent-secondary: #10b981;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --glass-bg: rgba(0, 0, 0, 0.95);
+  --glass-border: rgba(30, 41, 59, 0.8);
+  --glass-shadow: 0 4px 20px 0 rgba(255, 255, 255, 0.01);
+}
+
 /* --- Ramadan Gold (Light) --- */
 [data-theme="ramadan-gold"] {
   --bg-primary: #fdfaf7;

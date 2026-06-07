@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { changeLanguage } from '../lib/i18n';
 
 interface UIState {
-  theme: 'emerald-night' | 'gold-crescent' | 'midnight-sapphire' | 'pearl-light' | 'ramadan-gold';
+  theme: 'emerald-night' | 'gold-crescent' | 'midnight-sapphire' | 'pearl-light' | 'ramadan-gold' | 'pure-white';
   isDark: boolean;
   language: 'en' | 'so' | 'ar';
   sidebarCollapsed: boolean;

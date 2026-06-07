@@ -123,7 +123,8 @@ export const ProfilePage: React.FC = () => {
     { id: 'gold-crescent', name: 'Gold Crescent', color: 'bg-[#c29845]' },
     { id: 'midnight-sapphire', name: 'Midnight Sapphire', color: 'bg-[#2563eb]' },
     { id: 'pearl-light', name: 'Pearl Light', color: 'bg-[#a3a3a3]' },
-    { id: 'ramadan-gold', name: 'Ramadan Gold', color: 'bg-[#d97706]' }
+    { id: 'ramadan-gold', name: 'Ramadan Gold', color: 'bg-[#d97706]' },
+    { id: 'pure-white', name: 'Pure White', color: 'bg-[#ffffff] border border-border-color/40' }
   ] as const;
 
   return (
