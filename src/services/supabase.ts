@@ -15,12 +15,16 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
+// Dynamic check to determine if Database operations are active
+export const isOnline = () => typeof window !== 'undefined' && navigator.onLine;
+const isDbActive = () => isSupabaseConfigured && supabase && isOnline();
+
 // Complete DB Sync Service
 export const dbService = {
   // --- Profiles ---
   async getProfile(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -46,8 +50,8 @@ export const dbService = {
   },
 
   async syncProfile(userId: string, profileData: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('profiles')
         .upsert({ id: userId, ...profileData });
       return { success: !error, error };
@@ -57,8 +61,8 @@ export const dbService = {
 
   // --- Salah Logs ---
   async getPrayerLogs(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('prayer_logs')
         .select('*')
         .eq('user_id', userId);
@@ -68,8 +72,8 @@ export const dbService = {
   },
 
   async logPrayer(userId: string, prayerName: string, status: string, date: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('prayer_logs')
         .upsert({ user_id: userId, prayer_name: prayerName, status, prayer_date: date });
       return { success: !error, error };
@@ -79,8 +83,8 @@ export const dbService = {
 
   // --- Quran Progress ---
   async getQuranProgress(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('quran_progress')
         .select('*')
         .eq('user_id', userId)
@@ -91,8 +95,8 @@ export const dbService = {
   },
 
   async syncQuranProgress(userId: string, progress: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('quran_progress')
         .upsert({ user_id: userId, ...progress });
       return { success: !error, error };
@@ -102,8 +106,8 @@ export const dbService = {
 
   // --- Dhikr Logs ---
   async getDhikrLogs(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('dhikr_logs')
         .select('*')
         .eq('user_id', userId);
@@ -113,8 +117,8 @@ export const dbService = {
   },
 
   async insertDhikrLog(userId: string, log: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('dhikr_logs')
         .insert({ user_id: userId, ...log });
       return { success: !error, error };
@@ -124,8 +128,8 @@ export const dbService = {
 
   // --- Habits ---
   async getHabits(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('habits')
         .select('*')
         .eq('user_id', userId);
@@ -135,8 +139,8 @@ export const dbService = {
   },
 
   async insertHabit(userId: string, habit: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('habits')
         .insert({ user_id: userId, ...habit })
         .select()
@@ -147,8 +151,8 @@ export const dbService = {
   },
 
   async deleteHabit(habitId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('habits')
         .delete()
         .eq('id', habitId);
@@ -159,8 +163,8 @@ export const dbService = {
 
   // --- Habit Logs ---
   async getHabitLogs(habitIds: string[]) {
-    if (isSupabaseConfigured && supabase && habitIds.length > 0) {
-      const { data, error } = await supabase
+    if (isDbActive() && habitIds.length > 0) {
+      const { data, error } = await supabase!
         .from('habit_logs')
         .select('*')
         .in('habit_id', habitIds);
@@ -170,8 +174,8 @@ export const dbService = {
   },
 
   async logHabit(habitId: string, status: string, date: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('habit_logs')
         .upsert({ habit_id: habitId, status, logged_date: date });
       return { success: !error, error };
@@ -181,8 +185,8 @@ export const dbService = {
 
   // --- Subscriptions ---
   async getSubscriptions(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('subscriptions')
         .select('*')
         .eq('user_id', userId);
@@ -192,8 +196,8 @@ export const dbService = {
   },
 
   async insertSubscription(userId: string, sub: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('subscriptions')
         .insert({ user_id: userId, ...sub })
         .select()
@@ -204,8 +208,8 @@ export const dbService = {
   },
 
   async deleteSubscription(subId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('subscriptions')
         .delete()
         .eq('id', subId);
@@ -215,8 +219,8 @@ export const dbService = {
   },
 
   async updateSubscription(subId: string, updateData: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('subscriptions')
         .update(updateData)
         .eq('id', subId);
@@ -227,8 +231,8 @@ export const dbService = {
 
   // --- Expenses ---
   async getExpenses(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('expenses')
         .select('*')
         .eq('user_id', userId);
@@ -238,8 +242,8 @@ export const dbService = {
   },
 
   async insertExpense(userId: string, exp: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('expenses')
         .insert({ user_id: userId, ...exp })
         .select()
@@ -250,8 +254,8 @@ export const dbService = {
   },
 
   async deleteExpense(expId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('expenses')
         .delete()
         .eq('id', expId);
@@ -262,8 +266,8 @@ export const dbService = {
 
   // --- Zakat Records ---
   async getZakatRecords(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('zakat_records')
         .select('*')
         .eq('user_id', userId)
@@ -274,8 +278,8 @@ export const dbService = {
   },
 
   async insertZakatRecord(userId: string, record: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('zakat_records')
         .insert({ user_id: userId, ...record });
       return { success: !error, error };
@@ -285,8 +289,8 @@ export const dbService = {
 
   // --- Goals ---
   async getGoals(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('goals')
         .select('*')
         .eq('user_id', userId);
@@ -296,8 +300,8 @@ export const dbService = {
   },
 
   async insertGoal(userId: string, goal: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    if (isDbActive()) {
+      const { data, error } = await supabase!
         .from('goals')
         .insert({ user_id: userId, ...goal })
         .select()
@@ -308,8 +312,8 @@ export const dbService = {
   },
 
   async deleteGoal(goalId: string) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('goals')
         .delete()
         .eq('id', goalId);
@@ -319,8 +323,8 @@ export const dbService = {
   },
 
   async updateGoal(goalId: string, updateData: any) {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (isDbActive()) {
+      const { error } = await supabase!
         .from('goals')
         .update(updateData)
         .eq('id', goalId);
@@ -331,7 +335,7 @@ export const dbService = {
 
   // --- Master User Synchronizer ---
   async fetchAllUserData(userId: string) {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isDbActive()) {
       return null;
     }
     try {

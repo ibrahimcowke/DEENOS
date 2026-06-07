@@ -24,13 +24,29 @@ function App() {
   const { onboarded } = useUIStore();
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Sync data with Supabase DDL on load
+  // Sync data with Supabase DDL on load / handle online reconnection
   useEffect(() => {
-    if (onboarded) {
+    if (onboarded && navigator.onLine) {
       useDeenStore.getState().syncSpiritualData();
       useHabitStore.getState().syncHabitsData();
       useFinanceStore.getState().syncFinanceData();
     }
+
+    const handleOnline = () => {
+      console.log('DEENOS™: Internet connection restored. Syncing offline data...');
+      if (onboarded) {
+        useDeenStore.getState().syncOfflineData().then(() => {
+          useDeenStore.getState().syncSpiritualData();
+          useHabitStore.getState().syncHabitsData();
+          useFinanceStore.getState().syncFinanceData();
+        });
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
   }, [onboarded]);
 
 

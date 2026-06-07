@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini';
 import { Target, PlusCircle, Sparkles, CheckSquare, Square, Trash2 } from 'lucide-react';
 
@@ -10,13 +10,39 @@ interface Goal {
   roadmapCompleted: boolean[];
   showRoadmap: boolean;
   generatingPlan: boolean;
+  deadline?: string;
+  priority?: 'high' | 'medium' | 'low';
 }
 
 export const GoalsPage: React.FC = () => {
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const [goals, setGoals] = useState<Goal[]>(() => {
+    try {
+      const saved = localStorage.getItem('deenos_goals');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('deenos_goals', JSON.stringify(goals));
+  }, [goals]);
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Goal['category']>('deen');
+  const [deadline, setDeadline] = useState('');
+  const [priority, setPriority] = useState<Goal['priority']>('medium');
+
+  const getDaysLeft = (deadlineStr?: string) => {
+    if (!deadlineStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(deadlineStr);
+    target.setHours(0, 0, 0, 0);
+    const diffTime = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
 
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,11 +55,15 @@ export const GoalsPage: React.FC = () => {
       roadmap: [],
       roadmapCompleted: [],
       showRoadmap: false,
-      generatingPlan: false
+      generatingPlan: false,
+      deadline: deadline || undefined,
+      priority
     };
 
     setGoals([...goals, newGoal]);
     setTitle('');
+    setDeadline('');
+    setPriority('medium');
   };
 
   const handleDeleteGoal = (id: string) => {
@@ -113,8 +143,42 @@ export const GoalsPage: React.FC = () => {
                     <div key={g.id} className="p-4 rounded-xl border border-border-color bg-bg-secondary flex flex-col shadow-sm gap-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <span className="text-sm font-extrabold text-text-primary block">{g.title}</span>
-                          <span className="text-[10px] text-text-muted mt-0.5 block uppercase font-bold tracking-widest">{g.category}</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-extrabold text-text-primary">{g.title}</span>
+                            {g.priority && (
+                              <span className={`text-[8px] uppercase font-extrabold px-1.5 py-0.5 rounded border ${
+                                g.priority === 'high'
+                                  ? 'bg-red-500/15 border-red-500/30 text-red-500'
+                                  : g.priority === 'medium'
+                                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-500'
+                                  : 'bg-blue-500/15 border-blue-500/30 text-blue-500'
+                              }`}>
+                                {g.priority}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-text-muted uppercase font-bold tracking-widest">{g.category}</span>
+                            {g.deadline && (() => {
+                              const daysLeft = getDaysLeft(g.deadline);
+                              if (daysLeft === null) return null;
+                              return (
+                                <span className={`text-[9px] font-extrabold ${
+                                  daysLeft < 0 
+                                    ? 'text-red-500' 
+                                    : daysLeft === 0 
+                                    ? 'text-amber-500' 
+                                    : 'text-success'
+                                }`}>
+                                  • {daysLeft < 0 
+                                    ? `Overdue by ${Math.abs(daysLeft)}d` 
+                                    : daysLeft === 0 
+                                    ? 'Due Today' 
+                                    : `${daysLeft}d left`}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -218,6 +282,31 @@ export const GoalsPage: React.FC = () => {
                 <option value="reading">Islamic Reading</option>
                 <option value="personal">Personal Development</option>
               </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-bold text-text-secondary block mb-1">Target Date</label>
+                <input
+                  type="date"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-text-secondary block mb-1">Priority</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as Goal['priority'])}
+                  className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary"
+                >
+                  <option value="high">High 🔴</option>
+                  <option value="medium">Medium 🟡</option>
+                  <option value="low">Low 🔵</option>
+                </select>
+              </div>
             </div>
 
             <button

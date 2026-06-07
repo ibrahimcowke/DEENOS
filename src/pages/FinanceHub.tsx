@@ -3,8 +3,9 @@ import { useFinanceStore } from '../store/financeStore';
 import type { Subscription, Expense } from '../store/financeStore';
 import { ZakatCalculator } from '../components/ZakatCalculator';
 import { geminiService } from '../services/gemini';
-import { Wallet, Sparkles, CreditCard, PlusCircle, Trash2, TrendingDown } from 'lucide-react';
+import { Wallet, Sparkles, CreditCard, PlusCircle, Trash2, TrendingDown, DollarSign, ShieldCheck, HeartHandshake } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import confetti from 'canvas-confetti';
 
 export const FinanceHub: React.FC = () => {
   const { 
@@ -13,6 +14,41 @@ export const FinanceHub: React.FC = () => {
   } = useFinanceStore();
 
   const [activeTab, setActiveTab] = useState<'subs' | 'expenses' | 'zakat'>('subs');
+
+  // Halal Purifier States
+  const [purifyPortfolioVal, setPurifyPortfolioVal] = useState(0);
+  const [purifyDividends, setPurifyDividends] = useState(0);
+  const [purifyPercent, setPurifyPercent] = useState(5); // Default 5% rule
+  const [purifyResult, setPurifyResult] = useState<number | null>(null);
+  const [purifySuccess, setPurifySuccess] = useState(false);
+
+  const handlePurify = (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = purifyDividends * (purifyPercent / 100);
+    setPurifyResult(parseFloat(result.toFixed(2)));
+    setPurifySuccess(false);
+  };
+
+  const handleCommitPurification = () => {
+    if (purifyResult === null || purifyResult <= 0) return;
+    
+    // Log as a Sadaqah/Charity expense
+    addExpense(
+      purifyResult, 
+      'charity', 
+      'Stock Dividends Purification Cleansing Sadaqah', 
+      new Date().toISOString().split('T')[0]
+    );
+    
+    setPurifySuccess(true);
+    
+    // Confetti!
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      colors: ['#3b82f6', '#10b981', '#fbbf24']
+    });
+  };
 
   // Form states for Subscriptions
   const [subName, setSubName] = useState('');
@@ -426,8 +462,113 @@ export const FinanceHub: React.FC = () => {
           3. ZAKAT CALCULATOR TAB
           ======================================================== */}
       {activeTab === 'zakat' && (
-        <div className="flex justify-center py-2">
-          <ZakatCalculator />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
+          <div className="lg:col-span-7 w-full">
+            <ZakatCalculator />
+          </div>
+          <div className="lg:col-span-5 glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 shadow-lg w-full">
+            <div className="flex items-center gap-2 mb-6">
+              <Sparkles className="text-primary" size={24} />
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-text-primary">Halal Investment Purifier</h2>
+                <p className="text-xs text-text-secondary mt-0.5">Cleanse non-compliant revenue from dividend yields (e.g. 5% rule)</p>
+              </div>
+            </div>
+
+            <form onSubmit={handlePurify} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-text-secondary block mb-1">Portfolio Market Value (USD)</label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={14} />
+                  <input
+                    type="number"
+                    value={purifyPortfolioVal || ''}
+                    onChange={(e) => setPurifyPortfolioVal(Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="0.00"
+                    className="pl-8 pr-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-text-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-text-secondary block mb-1">Dividends Received (USD)</label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={14} />
+                    <input
+                      type="number"
+                      value={purifyDividends || ''}
+                      onChange={(e) => setPurifyDividends(Math.max(0, parseFloat(e.target.value) || 0))}
+                      placeholder="0.00"
+                      className="pl-8 pr-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-text-primary"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-text-secondary block mb-1">Impermissible Revenue %</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={purifyPercent || ''}
+                    onChange={(e) => setPurifyPercent(Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="5.0"
+                    className="px-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center text-text-primary"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition hover:scale-[1.01] shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                Calculate Purification
+              </button>
+            </form>
+
+            {purifyResult !== null && (
+              <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-4">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <span className="text-text-secondary">Portfolio Value:</span>
+                  <span className="font-bold text-right text-text-primary">${purifyPortfolioVal.toLocaleString()}</span>
+                  
+                  <span className="text-text-secondary">Dividend Yield:</span>
+                  <span className="font-bold text-right text-text-primary">${purifyDividends.toLocaleString()}</span>
+                  
+                  <span className="text-text-secondary">Cleansing Ratio:</span>
+                  <span className="font-semibold text-right text-text-primary">{purifyPercent}%</span>
+                </div>
+
+                <div className="border-t border-border-color pt-3 flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] text-text-secondary block">Purification Sadaqah Due</span>
+                    <span className="text-xl font-black text-primary">${purifyResult.toLocaleString()}</span>
+                  </div>
+
+                  {purifyResult > 0 && !purifySuccess && (
+                    <button
+                      onClick={handleCommitPurification}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition duration-300 hover:scale-105 shadow cursor-pointer"
+                    >
+                      <HeartHandshake size={12} />
+                      Cleanse Yields
+                    </button>
+                  )}
+
+                  {purifySuccess && (
+                    <div className="flex items-center gap-1 text-success font-semibold text-[10px] border border-success/20 bg-success/10 px-2 py-1 rounded-xl">
+                      <ShieldCheck size={12} />
+                      Yields Cleansed
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -13,6 +13,26 @@ export const QuranTracker: React.FC = () => {
   const [surahLog, setSurahLog] = useState<number>(quranProgress.lastSurah);
   const [ayahLog, setAyahLog] = useState<number>(quranProgress.lastAyah);
 
+  const keySurahs = [
+    { num: 1, name: 'Al-Fatihah', verses: 7, type: 'Meccan' },
+    { num: 2, name: 'Al-Baqarah', verses: 286, type: 'Medinan' },
+    { num: 18, name: 'Al-Kahf', verses: 110, type: 'Meccan' },
+    { num: 36, name: 'Yasin', verses: 83, type: 'Meccan' },
+    { num: 55, name: 'Ar-Rahman', verses: 78, type: 'Meccan' },
+    { num: 56, name: "Al-Waqi'ah", verses: 96, type: 'Meccan' },
+    { num: 67, name: 'Al-Mulk', verses: 30, type: 'Meccan' },
+    { num: 78, name: 'Al-Naba', verses: 40, type: 'Meccan' },
+    { num: 110, name: 'An-Nasr', verses: 3, type: 'Medinan' },
+    { num: 112, name: 'Al-Ikhlas', verses: 4, type: 'Meccan' },
+    { num: 113, name: 'Al-Falaq', verses: 5, type: 'Meccan' },
+    { num: 114, name: 'An-Nas', verses: 6, type: 'Meccan' }
+  ];
+
+  const handleSelectSurah = (surahNum: number) => {
+    setSurahLog(surahNum);
+    setAyahLog(1);
+  };
+
   const handleLogProgress = (e: React.FormEvent) => {
     e.preventDefault();
     const logValue = logMode === 'pages' ? pagesLog : ayahsLog;
@@ -144,21 +164,53 @@ export const QuranTracker: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: AI Quran Suggestions */}
-        <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 flex flex-col justify-between h-full">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="text-accent" size={20} />
-              <h3 className="text-base font-bold text-text-primary">{t('quran.ai_coach_title')}</h3>
+        {/* Right Column: AI Suggestions & Surah Reference */}
+        <div className="flex flex-col gap-6">
+          {/* AI Suggestions */}
+          <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 flex flex-col justify-between h-full min-h-[165px]">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="text-accent" size={20} />
+                <h3 className="text-base font-bold text-text-primary">{t('quran.ai_coach_title')}</h3>
+              </div>
+              
+              <p className="text-xs text-text-secondary leading-relaxed bg-accent/5 p-4 rounded-xl border border-accent/10">
+                {t('quran.ai_suggestion_placeholder')}
+              </p>
             </div>
-            
-            <p className="text-xs text-text-secondary leading-relaxed bg-accent/5 p-4 rounded-xl border border-accent/10">
-              {t('quran.ai_suggestion_placeholder')}
-            </p>
+
+            <div className="mt-4 border-t border-border-color/60 pt-4 text-[10px] text-text-muted">
+              Suggestions are updated daily depending on your active reading velocity.
+            </div>
           </div>
 
-          <div className="mt-4 border-t border-border-color/60 pt-4 text-[10px] text-text-muted">
-            Suggestions are updated daily depending on your active reading velocity.
+          {/* Quick Surah Reference List */}
+          <div className="glass-card border border-border-color rounded-2xl p-5 bg-bg-secondary/40">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted mb-3 flex items-center gap-1.5">
+              <BookOpen size={12} className="text-primary" />
+              Quick Surah Reference
+            </h3>
+            <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+              {keySurahs.map((s) => (
+                <button
+                  key={s.num}
+                  type="button"
+                  onClick={() => handleSelectSurah(s.num)}
+                  className="w-full flex items-center justify-between p-2 rounded-lg border border-border-color bg-bg-primary/30 hover:bg-primary/5 hover:border-primary/20 text-left transition text-[11px] cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded bg-bg-tertiary flex items-center justify-center font-bold text-text-muted text-[10px]">
+                      {s.num}
+                    </span>
+                    <div>
+                      <span className="font-extrabold text-text-primary block">{s.name}</span>
+                      <span className="text-[9px] text-text-muted">{s.type} • {s.verses} Ayat</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-primary font-bold hover:underline">Select</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

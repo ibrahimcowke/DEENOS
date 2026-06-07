@@ -22,6 +22,11 @@ export interface DhikrLog {
   date: string;
 }
 
+export interface NawafilLog {
+  prayer_name: string;
+  date: string;
+}
+
 export interface Achievement {
   id: string;
   name: string;
@@ -35,6 +40,7 @@ interface DeenState {
   prayerLogs: PrayerLog[];
   quranProgress: QuranProgress;
   dhikrLogs: DhikrLog[];
+  nawafilLogs: NawafilLog[];
   xp: number;
   level: number;
   dailyStreak: number;
@@ -44,7 +50,9 @@ interface DeenState {
   // Actions
   setUserId: (id: string) => void;
   syncSpiritualData: () => Promise<void>;
+  syncOfflineData: () => Promise<void>;
   logPrayer: (prayerName: string, status: PrayerLog['status'], date: string) => void;
+  logNawafil: (prayerName: string, date: string) => void;
   updateQuranProgress: (amount: number, surah: number, ayah: number, mode: 'pages' | 'ayahs') => void;
   logDhikr: (name: string, count: number, date: string) => void;
   addXp: (amount: number) => void;
@@ -91,6 +99,7 @@ const INITIAL_STATE = getStoredDeenState() || {
     completedJuz: []
   },
   dhikrLogs: [],
+  nawafilLogs: [],
   xp: 0,
   level: 1,
   dailyStreak: 1,
@@ -101,12 +110,13 @@ const INITIAL_STATE = getStoredDeenState() || {
 export const useDeenStore = create<DeenState>((set, get) => {
   const saveState = (newState: Partial<DeenState>) => {
     const currentState = { ...get(), ...newState };
-    const { logPrayer, updateQuranProgress, logDhikr, addXp, getDeenScore, unlockAchievement, resetAll, setUserId, syncSpiritualData, ...dataToSave } = currentState;
+    const { logPrayer, logNawafil, updateQuranProgress, logDhikr, addXp, getDeenScore, unlockAchievement, resetAll, setUserId, syncSpiritualData, syncOfflineData, ...dataToSave } = currentState;
     localStorage.setItem('deenos_spiritual_state', JSON.stringify(dataToSave));
   };
 
   return {
     ...INITIAL_STATE,
+    nawafilLogs: INITIAL_STATE.nawafilLogs || [],
 
     setUserId: (id: string) => {
       set({ userId: id });
@@ -162,6 +172,43 @@ export const useDeenStore = create<DeenState>((set, get) => {
       }
     },
 
+    syncOfflineData: async () => {
+      const uId = get().userId;
+      if (!isSupabaseConfigured || uId === 'offline-servant-user' || !navigator.onLine) return;
+
+      try {
+        // 1. Push prayers
+        const prayers = get().prayerLogs;
+        for (const p of prayers) {
+          await dbService.logPrayer(uId, p.prayer_name, p.status, p.date);
+        }
+
+        // 2. Push dhikrs
+        const dhikrs = get().dhikrLogs;
+        for (const d of dhikrs) {
+          await dbService.insertDhikrLog(uId, {
+            dhikr_name: d.name,
+            count: d.count,
+            logged_at: new Date(d.date).toISOString()
+          });
+        }
+
+        // 3. Push Quran progress
+        const quran = get().quranProgress;
+        await dbService.syncQuranProgress(uId, {
+          surah_number: quran.lastSurah,
+          ayah_number: quran.lastAyah,
+          page_number: Math.min(604, Math.floor(quran.pagesRead / 20) + 1),
+          juz_number: Math.min(30, Math.floor(quran.pagesRead / 20) + 1),
+          total_pages_read: quran.pagesRead
+        });
+
+        console.log('DEENOS™: Offline local changes synced to Supabase successfully.');
+      } catch (e) {
+        console.error('DEENOS™: Failed pushing offline data', e);
+      }
+    },
+
     logPrayer: (prayerName: string, status: PrayerLog['status'], date: string) => {
       const currentLogs = get().prayerLogs;
       const filtered = currentLogs.filter(
@@ -196,6 +243,28 @@ export const useDeenStore = create<DeenState>((set, get) => {
       );
       if (prayersToday.length === 5) {
         get().unlockAchievement('five_prayers_day');
+      }
+    },
+
+    logNawafil: (prayerName: string, date: string) => {
+      const currentLogs = get().nawafilLogs || [];
+      const exists = currentLogs.some(
+        (log: NawafilLog) => log.prayer_name === prayerName && log.date === date
+      );
+
+      let updatedLogs;
+      if (exists) {
+        updatedLogs = currentLogs.filter(
+          (log: NawafilLog) => !(log.prayer_name === prayerName && log.date === date)
+        );
+        set({ nawafilLogs: updatedLogs });
+        saveState({ nawafilLogs: updatedLogs });
+        get().addXp(-5);
+      } else {
+        updatedLogs = [...currentLogs, { prayer_name: prayerName, date }];
+        set({ nawafilLogs: updatedLogs });
+        saveState({ nawafilLogs: updatedLogs });
+        get().addXp(5);
       }
     },
 
@@ -336,6 +405,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
           completedJuz: []
         },
         dhikrLogs: [],
+        nawafilLogs: [],
         xp: 0,
         level: 1,
         dailyStreak: 1,

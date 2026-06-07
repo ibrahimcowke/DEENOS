@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 export const DhikrPage: React.FC = () => {
   const { t } = useTranslation();
-  const { logDhikr } = useDeenStore();
+  const { logDhikr, dhikrLogs } = useDeenStore();
 
   const [activeDhikr, setActiveDhikr] = useState<string>('subhanallah');
   const [sessionCount, setSessionCount] = useState<number>(0);
@@ -119,49 +119,77 @@ export const DhikrPage: React.FC = () => {
           />
         </div>
 
-        {/* Right Column: Target Setting & Virtues */}
-        <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 flex flex-col justify-between h-full space-y-4">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="text-accent" size={16} />
-              <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">Dhikr Target Parameters</h3>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {[33, 99, 100].map((tVal) => (
-                <button
-                  key={tVal}
-                  onClick={() => setTarget(tVal)}
-                  className={`py-2 rounded-lg border text-xs font-bold cursor-pointer ${
-                    target === tVal
-                      ? 'bg-primary/10 border-primary text-primary'
-                      : 'bg-bg-secondary border-border-color text-text-secondary'
-                  }`}
-                >
-                  {tVal}
-                </button>
-              ))}
+        {/* Right Column: Parameters & Session Logs */}
+        <div className="flex flex-col gap-6">
+          {/* Target Parameters & Virtues */}
+          <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="text-accent" size={16} />
+                <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">Dhikr Target Parameters</h3>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[33, 99, 100].map((tVal) => (
+                  <button
+                    key={tVal}
+                    onClick={() => setTarget(tVal)}
+                    className={`py-2 rounded-lg border text-xs font-bold cursor-pointer transition duration-150 ${
+                      target === tVal
+                        ? 'bg-primary/10 border-primary text-primary shadow-sm'
+                        : 'bg-bg-secondary border-border-color text-text-secondary hover:border-text-muted'
+                    }`}
+                  >
+                    {tVal}
+                  </button>
+                ))}
+              </div>
+
+              {activeDhikrDetails && (
+                <div className="mt-4 p-4 rounded-xl border border-primary/10 bg-primary/5 space-y-2.5">
+                  <span className="text-xs font-bold text-primary block flex items-center gap-1.5">
+                    <Heart size={12} className="fill-primary/20" />
+                    Virtue of Recitation
+                  </span>
+                  <p className="text-[11px] leading-relaxed text-text-secondary">
+                    {activeDhikr === 'subhanallah' && 'Log 33 counts of Subhan Allah after prayer to wipe away sins like the foam of the sea.'}
+                    {activeDhikr === 'alhamdulillah' && 'Expressing Alhamdulillah fills the spiritual balance scale (Mizan) with heavy rewards.'}
+                    {activeDhikr === 'allahuakbar' && 'Asserting Allahs greatness resets the ego and locks focus into the absolute Creator.'}
+                    {activeDhikr === 'astaghfirullah' && 'Seeking forgiveness continuously opens doors of sustenance, strength, and ease.'}
+                    {activeDhikr === 'custom' && 'Making continuous Du’a and supplications creates direct communication lines with Allah.'}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {activeDhikrDetails && (
-              <div className="mt-4 p-4 rounded-xl border border-primary/10 bg-primary/5 space-y-2.5">
-                <span className="text-xs font-bold text-primary block flex items-center gap-1.5">
-                  <Heart size={12} className="fill-primary/20" />
-                  Virtue of Recitation
-                </span>
-                <p className="text-[11px] leading-relaxed text-text-secondary">
-                  {activeDhikr === 'subhanallah' && 'Log 33 counts of Subhan Allah after prayer to wipe away sins like the foam of the sea.'}
-                  {activeDhikr === 'alhamdulillah' && 'Expressing Alhamdulillah fills the spiritual balance scale (Mizan) with heavy rewards.'}
-                  {activeDhikr === 'allahuakbar' && 'Asserting Allahs greatness resets the ego and locks focus into the absolute Creator.'}
-                  {activeDhikr === 'astaghfirullah' && 'Seeking forgiveness continuously opens doors of sustenance, strength, and ease.'}
-                  {activeDhikr === 'custom' && 'Making continuous Du’a and supplications creates direct communication lines with Allah.'}
-                </p>
-              </div>
-            )}
+            <div className="text-[10px] text-text-muted pt-4 border-t border-border-color/60">
+              * Note: Complete your active target to unlock the "Dhikr Master" level reward badge.
+            </div>
           </div>
 
-          <div className="text-[10px] text-text-muted pt-4 border-t border-border-color/60">
-            * Note: Complete your active target to unlock the "Dhikr Master" level reward badge.
+          {/* Tasbih Session Logs */}
+          <div className="glass-card border border-border-color rounded-2xl p-5 bg-bg-secondary/40 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted flex items-center gap-1.5">
+              <Compass size={12} className="text-primary" />
+              Tasbih Session Logs
+            </h3>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {dhikrLogs.length === 0 ? (
+                <p className="text-[11px] text-text-muted text-center py-6">No tasbih sessions logged today yet.</p>
+              ) : (
+                [...dhikrLogs].reverse().slice(0, 5).map((log, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-2.5 rounded-xl border border-border-color bg-bg-primary/40 text-[10px] hover:border-primary/20 transition">
+                    <div>
+                      <span className="font-extrabold text-text-primary block capitalize">{log.name}</span>
+                      <span className="text-text-muted">{log.date}</span>
+                    </div>
+                    <div className="bg-primary/15 text-primary border border-primary/20 px-2 py-0.5 rounded-lg font-black text-xs">
+                      +{log.count}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

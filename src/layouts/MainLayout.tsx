@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUIStore } from '../store/uiStore';
 import { useDeenStore } from '../store/deenStore';
 import { 
@@ -23,6 +23,21 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, set
   const { level, xp } = useDeenStore();
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
+  const [showMobileMore, setShowMobileMore] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Navigation Items
   const navItems = [
@@ -61,7 +76,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, set
     <div className="flex h-screen w-screen overflow-hidden bg-bg-primary select-none text-text-primary">
       {/* SIDEBAR NAVIGATION PANEL */}
       <aside 
-        className={`glass border-r border-border-color flex flex-col h-full transition-all duration-300 z-30 shrink-0 relative ${
+        className={`hidden md:flex glass border-r border-border-color flex-col h-full transition-all duration-300 z-30 shrink-0 relative ${
           sidebarCollapsed ? 'w-16' : 'w-64'
         }`}
       >
@@ -218,13 +233,18 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, set
       {/* CORE CONTENT CONTAINER */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Workspace Top Header Bar */}
-        <header className="h-14 border-b border-border-color bg-bg-secondary/40 backdrop-blur px-6 flex items-center justify-between z-20 shrink-0">
+        <header className="h-14 border-b border-border-color bg-bg-secondary/40 backdrop-blur px-4 md:px-6 flex items-center justify-between z-20 shrink-0">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-extrabold tracking-tight text-text-primary">
+            <h1 className="text-lg font-extrabold tracking-tight text-text-primary truncate max-w-[140px] sm:max-w-none">
               {getActiveTabTitle()}
             </h1>
+            {!isOnline && (
+              <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse shadow-sm">
+                ⚠️ Local Offline Mode
+              </span>
+            )}
             {ramadanMode && (
-              <span className="bg-amber-600/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="bg-amber-600/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full hidden sm:flex items-center gap-1">
                 🌙 Ramadan Gold Theme
               </span>
             )}
@@ -305,10 +325,161 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, set
         </header>
 
         {/* Content View Area */}
-        <section className="flex-1 overflow-y-auto p-6 relative">
+        <section className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 relative">
           {children}
         </section>
       </main>
+
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <div className="md:hidden fixed bottom-4 left-4 right-4 h-16 rounded-2xl glass border border-border-color/60 shadow-xl flex items-center justify-around px-2 z-40 animate-in slide-in-from-bottom-2 duration-300">
+        {/* Dashboard */}
+        <button 
+          onClick={() => { setActiveTab('dashboard'); setShowMobileMore(false); }}
+          className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition cursor-pointer ${activeTab === 'dashboard' ? 'text-primary' : 'text-text-secondary'}`}
+        >
+          <LayoutDashboard size={18} />
+          <span className="text-[9px] font-bold mt-1">Home</span>
+        </button>
+        
+        {/* Salah */}
+        <button 
+          onClick={() => { setActiveTab('salah'); setShowMobileMore(false); }}
+          className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition cursor-pointer ${activeTab === 'salah' ? 'text-primary' : 'text-text-secondary'}`}
+        >
+          <MoonStar size={18} />
+          <span className="text-[9px] font-bold mt-1">Salah</span>
+        </button>
+        
+        {/* Quran */}
+        <button 
+          onClick={() => { setActiveTab('quran'); setShowMobileMore(false); }}
+          className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition cursor-pointer ${activeTab === 'quran' ? 'text-primary' : 'text-text-secondary'}`}
+        >
+          <BookOpen size={18} />
+          <span className="text-[9px] font-bold mt-1">Quran</span>
+        </button>
+        
+        {/* Dhikr */}
+        <button 
+          onClick={() => { setActiveTab('dhikr'); setShowMobileMore(false); }}
+          className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition cursor-pointer ${activeTab === 'dhikr' ? 'text-primary' : 'text-text-secondary'}`}
+        >
+          <Compass size={18} />
+          <span className="text-[9px] font-bold mt-1">Dhikr</span>
+        </button>
+        
+        {/* More Menu */}
+        <button 
+          onClick={() => setShowMobileMore(!showMobileMore)}
+          className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition cursor-pointer ${showMobileMore ? 'text-primary' : 'text-text-secondary'}`}
+        >
+          <Sparkles size={18} className={showMobileMore ? 'animate-spin-slow text-primary' : ''} />
+          <span className="text-[9px] font-bold mt-1">More</span>
+        </button>
+      </div>
+
+      {/* MOBILE "MORE" OVERLAY SHEET */}
+      {showMobileMore && (
+        <>
+          {/* Background Backdrop overlay */}
+          <div 
+            className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-30 transition-all"
+            onClick={() => setShowMobileMore(false)}
+          />
+          {/* Bottom Sheet Menu */}
+          <div className="md:hidden fixed bottom-24 left-4 right-4 rounded-3xl glass border border-border-color p-5 shadow-2xl z-40 flex flex-col gap-4 animate-in slide-in-from-bottom-5 duration-200">
+            <div className="flex justify-between items-center pb-2 border-b border-border-color/60">
+              <span className="text-xs font-black uppercase tracking-wider text-text-muted">More Features</span>
+              <span className="text-[10px] text-primary font-bold">Level {level} • {xp} XP</span>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3">
+              {/* Habits */}
+              <button
+                onClick={() => { setActiveTab('habits'); setShowMobileMore(false); }}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition cursor-pointer ${
+                  activeTab === 'habits' ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-primary/40 border-border-color text-text-secondary'
+                }`}
+              >
+                <Leaf size={18} />
+                <span className="text-[10px] font-extrabold mt-1.5">Habits</span>
+              </button>
+              
+              {/* Finances */}
+              <button
+                onClick={() => { setActiveTab('finances'); setShowMobileMore(false); }}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition cursor-pointer ${
+                  activeTab === 'finances' ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-primary/40 border-border-color text-text-secondary'
+                }`}
+              >
+                <Wallet size={18} />
+                <span className="text-[10px] font-extrabold mt-1.5">Finances</span>
+              </button>
+              
+              {/* Goals */}
+              <button
+                onClick={() => { setActiveTab('goals'); setShowMobileMore(false); }}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition cursor-pointer ${
+                  activeTab === 'goals' ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-primary/40 border-border-color text-text-secondary'
+                }`}
+              >
+                <Target size={18} />
+                <span className="text-[10px] font-extrabold mt-1.5">Goals</span>
+              </button>
+              
+              {/* Journal */}
+              <button
+                onClick={() => { setActiveTab('journal'); setShowMobileMore(false); }}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition cursor-pointer ${
+                  activeTab === 'journal' ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-primary/40 border-border-color text-text-secondary'
+                }`}
+              >
+                <PenTool size={18} />
+                <span className="text-[10px] font-extrabold mt-1.5">Journal</span>
+              </button>
+              
+              {/* AI Coach */}
+              <button
+                onClick={() => { setActiveTab('ai-coach'); setShowMobileMore(false); }}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition cursor-pointer ${
+                  activeTab === 'ai-coach' ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-primary/40 border-border-color text-text-secondary'
+                }`}
+              >
+                <MessageSquare size={18} />
+                <span className="text-[10px] font-extrabold mt-1.5">AI Coach</span>
+              </button>
+
+              {/* Settings */}
+              <button
+                onClick={() => { setActiveTab('profile'); setShowMobileMore(false); }}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition cursor-pointer ${
+                  activeTab === 'profile' ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-primary/40 border-border-color text-text-secondary'
+                }`}
+              >
+                <Settings size={18} />
+                <span className="text-[10px] font-extrabold mt-1.5">Settings</span>
+              </button>
+            </div>
+
+            {/* Theme selector inside sheet */}
+            <div className="pt-2 border-t border-border-color/60 flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase text-text-muted">Select Theme</span>
+              <div className="flex gap-1.5">
+                {themeOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setTheme(opt.id)}
+                    className={`w-5 h-5 rounded-full border cursor-pointer hover:scale-110 transition ${opt.color} ${
+                      theme === opt.id ? 'border-text-primary scale-110' : 'border-transparent'
+                    }`}
+                    title={opt.name}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

@@ -1,13 +1,21 @@
 import React from 'react';
 import { useDeenStore } from '../store/deenStore';
 import type { PrayerLog } from '../store/deenStore';
-import { MoonStar, BarChart3, TrendingUp } from 'lucide-react';
+import { MoonStar, BarChart3, TrendingUp, Sparkles } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
 export const SalahTracker: React.FC = () => {
   const { t } = useTranslation();
-  const { prayerLogs, logPrayer } = useDeenStore();
+  const { prayerLogs, logPrayer, nawafilLogs, logNawafil } = useDeenStore();
+
+  const nawafils = [
+    { key: 'tahajjud', label: 'Tahajjud (Night Prayer)', time: 'Last 1/3 of Night' },
+    { key: 'ishraq', label: 'Ishraq (Post-Sunrise)', time: '15 mins after Sunrise' },
+    { key: 'duha', label: 'Duha (Forenoon Prayer)', time: 'Mid-morning' },
+    { key: 'witr', label: 'Witr (Odd Prayer)', time: 'Post-Isha / Night' },
+    { key: 'sunnah_rawatib', label: 'Sunnah Rawatib', time: "12 daily optional raka'ah" }
+  ];
 
   const prayers = [
     { key: 'fajr', label: t('salah.fajr'), time: '04:15 AM' },
@@ -26,6 +34,15 @@ export const SalahTracker: React.FC = () => {
 
   const handleLog = (prayerKey: string, status: PrayerLog['status']) => {
     logPrayer(prayerKey, status, today);
+  };
+
+  const isNawafilLogged = (key: string) => {
+    const logs = nawafilLogs || [];
+    return logs.some((l) => l.prayer_name === key && l.date === today);
+  };
+
+  const handleNawafilLog = (key: string) => {
+    logNawafil(key, today);
   };
 
   const weeklyAnalyticsData = [
@@ -135,6 +152,55 @@ export const SalahTracker: React.FC = () => {
                   </button>
                 </div>
               </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Nawafil & Sunnah Section */}
+      <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Sparkles className="text-amber-500" size={24} />
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-text-primary">Nawafil & Sunnah Prayers</h2>
+              <p className="text-xs text-text-secondary mt-0.5">Earn +5 XP for each optional sunnah or night prayer logged</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {nawafils.map((n) => {
+            const isLogged = isNawafilLogged(n.key);
+            return (
+              <button
+                key={n.key}
+                onClick={() => handleNawafilLog(n.key)}
+                className={`flex items-center justify-between p-4 rounded-xl border transition duration-200 cursor-pointer text-left w-full ${
+                  isLogged
+                    ? 'bg-amber-500/10 border-amber-500/40 text-amber-500 shadow-sm shadow-amber-500/5'
+                    : 'bg-bg-secondary/80 border-border-color text-text-secondary hover:border-text-muted hover:bg-bg-secondary'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
+                    isLogged ? 'bg-amber-500/20 text-amber-500' : 'bg-bg-tertiary border border-border-color text-text-muted'
+                  }`}>
+                    {n.label.charAt(0)}
+                  </div>
+                  <div>
+                    <span className={`text-xs font-bold block ${isLogged ? 'text-amber-500' : 'text-text-primary'}`}>
+                      {n.label}
+                    </span>
+                    <span className="text-[9px] text-text-muted mt-0.5 block">{n.time}</span>
+                  </div>
+                </div>
+                <div className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                  isLogged ? 'bg-amber-500 text-white' : 'bg-bg-tertiary text-text-muted border border-border-color'
+                }`}>
+                  {isLogged ? 'Logged' : '+5 XP'}
+                </div>
+              </button>
             );
           })}
         </div>
