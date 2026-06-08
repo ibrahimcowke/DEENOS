@@ -245,7 +245,6 @@ export const useDeenStore = create<DeenState>((set, get) => {
         dbService.logPrayer(get().userId, prayerName, status, date);
       }
 
-      // Calculate XP diff
       const getStatusXp = (stat: string | null) => {
         if (!stat) return 0;
         switch (stat) {
@@ -255,6 +254,8 @@ export const useDeenStore = create<DeenState>((set, get) => {
             return 15;
           case 'individual_outside':
             return 10;
+          case 'completed':
+            return 15;
           case 'delayed':
             return 5;
           case 'missed':

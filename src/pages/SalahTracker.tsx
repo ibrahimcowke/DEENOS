@@ -33,39 +33,7 @@ export const SalahTracker: React.FC = () => {
 
   const handleToggle = (prayerKey: string, option: string) => {
     const currentStatus = getPrayerStatus(prayerKey);
-    let newStatus = '';
-
-    if (option === 'missed') {
-      newStatus = currentStatus === 'missed' ? '' : 'missed';
-    } else if (option === 'completed') {
-      const hasPrayed = currentStatus && currentStatus !== 'missed' && currentStatus.includes('completed');
-      newStatus = hasPrayed ? '' : 'completed';
-    } else {
-      // Modifiers
-      let options = currentStatus && currentStatus !== 'missed' ? currentStatus.split(',').filter(Boolean) : [];
-      
-      if (options.includes(option)) {
-        options = options.filter(o => o !== option);
-      } else {
-        options.push(option);
-      }
-      
-      // Ensure 'completed' tag is present if we have modifiers
-      if (options.length > 0 && !options.includes('completed')) {
-        options.push('completed');
-      }
-
-      // Mutual exclusivity for mosque vs outside
-      if (option === 'mosque' && options.includes('outside')) {
-        options = options.filter(o => o !== 'outside');
-      }
-      if (option === 'outside' && options.includes('mosque')) {
-        options = options.filter(o => o !== 'mosque');
-      }
-      
-      newStatus = options.join(',');
-    }
-
+    const newStatus = currentStatus === option ? '' : option;
     logPrayer(prayerKey, newStatus, today);
   };
 
@@ -164,7 +132,7 @@ export const SalahTracker: React.FC = () => {
               const status = getPrayerStatus(p.key) || '';
               
               // Status flags
-              const isPrayed = status === 'jamaah_mosque' || status === 'individual_mosque' || status === 'individual_outside';
+              const isPrayed = status === 'completed' || status === 'jamaah_mosque' || status === 'individual_mosque' || status === 'individual_outside';
               const isDelayed = status === 'delayed';
               const isMissed = status === 'missed';
 
@@ -174,6 +142,7 @@ export const SalahTracker: React.FC = () => {
                   case 'jamaah_mosque': return 25;
                   case 'individual_mosque': return 15;
                   case 'individual_outside': return 10;
+                  case 'completed': return 15;
                   case 'delayed': return 5;
                   default: return 0;
                 }

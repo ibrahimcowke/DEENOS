@@ -121,7 +121,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
               <div className="space-y-2.5">
                 {obligatoryPrayers.map((p) => {
                   const status = getPrayerStatus(p.key);
-                  const isPrayed = status && status !== 'missed' && status.includes('completed');
+                  const isPrayed = status && status !== 'missed' && status !== '';
                   const isMissed = status === 'missed';
                   
                   return (
