@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDeenStore } from '../store/deenStore';
-import { BookOpen, Sparkles, PlusCircle, Trophy, BookMarked, Trash2, Edit2, Check, X, Search } from 'lucide-react';
+import { BookOpen, Sparkles, PlusCircle, Trophy, BookMarked, Trash2, Edit2, Check, X, Search, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { quranSurahs } from '../lib/quranData';
 
@@ -15,6 +15,8 @@ export const QuranTracker: React.FC = () => {
   const [ayahLog, setAyahLog] = useState<number>(quranProgress.lastAyah);
   
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSurahDropdownOpen, setIsSurahDropdownOpen] = useState<boolean>(false);
+  const [surahSearchText, setSurahSearchText] = useState<string>('');
 
   // Inline editing states for logs
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
@@ -51,6 +53,9 @@ export const QuranTracker: React.FC = () => {
     e.preventDefault();
     const logValue = logMode === 'pages' ? pagesLog : ayahsLog;
     updateQuranProgress(logValue, surahLog, ayahLog, logMode);
+    // Reset amount read inputs for next session
+    if (logMode === 'pages') setPagesLog(1);
+    else setAyahsLog(10);
   };
 
   // Filter surahs
@@ -72,24 +77,26 @@ export const QuranTracker: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left: Logger Form */}
-        <div className="lg:col-span-2 glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40">
-          <div className="flex justify-between items-start mb-6">
-            <div className="flex items-center gap-2">
-              <BookOpen className="text-primary" size={24} />
+        <div className="lg:col-span-2 glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                <BookOpen size={22} className="animate-pulse" />
+              </div>
               <div>
-                <h2 className="text-xl font-bold tracking-tight text-text-primary">{t('quran.tracker_title')}</h2>
+                <h2 className="text-lg font-bold tracking-tight text-text-primary">{t('quran.tracker_title')}</h2>
                 <p className="text-xs text-text-secondary mt-0.5">{t('quran.add_progress')}</p>
               </div>
             </div>
             
             {/* Mode Selection Toggle */}
-            <div className="flex bg-bg-primary/80 border border-border-color p-0.5 rounded-xl">
+            <div className="flex bg-bg-primary/80 border border-border-color p-0.5 rounded-xl self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setLogMode('pages')}
                 className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
                   logMode === 'pages'
-                    ? 'bg-primary text-white shadow'
+                    ? 'bg-primary text-white shadow-sm'
                     : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
@@ -100,7 +107,7 @@ export const QuranTracker: React.FC = () => {
                 onClick={() => setLogMode('ayahs')}
                 className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
                   logMode === 'ayahs'
-                    ? 'bg-primary text-white shadow'
+                    ? 'bg-primary text-white shadow-sm'
                     : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
@@ -109,78 +116,172 @@ export const QuranTracker: React.FC = () => {
             </div>
           </div>
 
-          <form onSubmit={handleLogProgress} className="grid grid-cols-3 gap-4">
-            <div>
-              {logMode === 'pages' ? (
-                <>
-                  <label className="text-xs font-semibold text-text-secondary block mb-1">Pages Read</label>
+          <form onSubmit={handleLogProgress} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Column 1: Amount Read */}
+              <div className="p-4 rounded-xl border border-border-color bg-bg-primary/20 space-y-2">
+                <label className="text-xs font-bold text-text-secondary block uppercase tracking-wider">
+                  {logMode === 'pages' ? 'Pages Read' : 'Ayat Read'}
+                </label>
+                <div className="relative">
                   <input
                     type="number"
                     min="1"
-                    max="604"
-                    value={pagesLog}
-                    onChange={(e) => setPagesLog(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="px-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center text-text-primary"
+                    max={logMode === 'pages' ? 604 : 6236}
+                    value={logMode === 'pages' ? pagesLog : ayahsLog}
+                    onChange={(e) => {
+                      const val = Math.max(1, parseInt(e.target.value) || 1);
+                      if (logMode === 'pages') setPagesLog(val);
+                      else setAyahsLog(val);
+                    }}
+                    className="w-full px-3 py-2 border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center font-bold text-text-primary"
                   />
-                </>
-              ) : (
-                <>
-                  <label className="text-xs font-semibold text-text-secondary block mb-1">Ayat Read</label>
+                  <span className="absolute right-3 top-2.5 text-[10px] font-bold text-text-muted">
+                    {logMode === 'pages' ? 'pages' : 'ayat'}
+                  </span>
+                </div>
+                <p className="text-[10px] text-text-muted">
+                  {logMode === 'pages' 
+                    ? `Rewards: +${pagesLog * 15} XP (${15} XP/pg)` 
+                    : `Rewards: +${ayahsLog * 1} XP (${1} XP/ayah)`}
+                </p>
+              </div>
+
+              {/* Column 2: Surah Searchable Selector */}
+              <div className="p-4 rounded-xl border border-border-color bg-bg-primary/20 space-y-2 relative">
+                <label className="text-xs font-bold text-text-secondary block uppercase tracking-wider">Surah Stopping Point</label>
+                <button
+                  type="button"
+                  onClick={() => setIsSurahDropdownOpen(!isSurahDropdownOpen)}
+                  className="w-full px-3 py-2 border border-border-color rounded-xl bg-bg-primary/50 text-sm text-left flex justify-between items-center text-text-primary cursor-pointer h-[38px] hover:border-text-muted transition"
+                >
+                  <span className="truncate font-semibold text-xs text-text-primary">
+                    {surahLog}. {quranSurahs.find(s => s.num === surahLog)?.name || 'Select Surah'}
+                  </span>
+                  <ChevronDown size={14} className="text-text-muted" />
+                </button>
+
+                {isSurahDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setIsSurahDropdownOpen(false)} />
+                    <div className="absolute z-40 left-3 right-3 mt-1 p-2 rounded-xl border border-border-color bg-bg-secondary/95 backdrop-blur-md shadow-xl flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search Surah..."
+                          value={surahSearchText}
+                          onChange={(e) => setSurahSearchText(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 border border-border-color rounded-lg bg-bg-primary text-xs focus:outline-none focus:border-primary text-text-primary"
+                          autoFocus
+                        />
+                        <Search className="absolute left-2.5 top-2 text-text-muted" size={11} />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto pr-1 space-y-1">
+                        {quranSurahs
+                          .filter(s => s.name.toLowerCase().includes(surahSearchText.toLowerCase()) || s.num.toString() === surahSearchText)
+                          .map(s => (
+                            <button
+                              key={s.num}
+                              type="button"
+                              onClick={() => {
+                                handleSelectSurah(s.num);
+                                setIsSurahDropdownOpen(false);
+                                setSurahSearchText('');
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex justify-between items-center ${
+                                surahLog === s.num
+                                  ? 'bg-primary/10 text-primary font-bold'
+                                  : 'hover:bg-bg-primary/50 text-text-secondary'
+                              }`}
+                            >
+                              <span>{s.num}. {s.name}</span>
+                              <span className="text-[10px] text-text-muted">{s.verses} Ayat</span>
+                            </button>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  </>
+                )}
+                <p className="text-[10px] text-text-muted truncate">
+                  {quranSurahs.find(s => s.num === surahLog)?.type} • {quranSurahs.find(s => s.num === surahLog)?.verses} Ayat total
+                </p>
+              </div>
+
+              {/* Column 3: Ayah Input */}
+              <div className="p-4 rounded-xl border border-border-color bg-bg-primary/20 space-y-2">
+                <label className="text-xs font-bold text-text-secondary block uppercase tracking-wider">Ayah Stopping Point</label>
+                <div className="relative">
                   <input
                     type="number"
                     min="1"
-                    value={ayahsLog}
-                    onChange={(e) => setAyahsLog(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="px-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center text-text-primary"
+                    max={quranSurahs.find(s => s.num === surahLog)?.verses || 286}
+                    value={ayahLog}
+                    onChange={(e) => {
+                      const maxAyah = quranSurahs.find(s => s.num === surahLog)?.verses || 286;
+                      setAyahLog(Math.max(1, Math.min(maxAyah, parseInt(e.target.value) || 1)));
+                    }}
+                    className="w-full px-3 py-2 border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center font-bold text-text-primary"
                   />
-                </>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-text-secondary block mb-1">Last Surah Number</label>
-              <input
-                type="number"
-                min="1"
-                max="114"
-                value={surahLog}
-                onChange={(e) => setSurahLog(Math.max(1, Math.min(114, parseInt(e.target.value) || 1)))}
-                className="px-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center text-text-primary"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-text-secondary block mb-1">Last Ayah Number</label>
-              <input
-                type="number"
-                min="1"
-                value={ayahLog}
-                onChange={(e) => setAyahLog(Math.max(1, parseInt(e.target.value) || 1))}
-                className="px-3 py-2 w-full border border-border-color rounded-xl bg-bg-primary/50 text-sm focus:outline-none focus:border-primary text-center text-text-primary"
-              />
+                  <span className="absolute right-3 top-2.5 text-[10px] font-bold text-text-muted">
+                    / {quranSurahs.find(s => s.num === surahLog)?.verses || 286}
+                  </span>
+                </div>
+                <p className="text-[10px] text-text-muted">
+                  Max verse limit is validated
+                </p>
+              </div>
             </div>
 
             <button
               type="submit"
-              className="col-span-3 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition hover:scale-[1.01] shadow-md mt-2 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-extrabold transition hover:scale-[1.005] active:scale-[0.995] shadow-lg mt-2 flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <PlusCircle size={14} />
+              <PlusCircle size={15} />
               {logMode === 'pages'
-                ? `Log Quran Progress (+${pagesLog * 15} XP / 15 XP per Page)`
-                : `Log Quran Progress (+${ayahsLog * 1} XP / 1 XP per Ayah)`}
+                ? `Confirm Quran Log (+${pagesLog * 15} XP)`
+                : `Confirm Quran Log (+${ayahsLog * 1} XP)`}
             </button>
           </form>
 
-          {/* Current reading status widget */}
-          <div className="mt-6 p-4 rounded-xl border border-border-color bg-bg-primary/40 flex justify-between items-center text-xs">
-            <div className="flex items-center gap-2">
-              <BookMarked size={16} className="text-primary" />
+          {/* Quick reading stats block */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-border-color/60">
+            {/* Last read position */}
+            <div className="p-3.5 rounded-xl border border-primary/10 bg-primary/5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center text-primary border border-primary/20">
+                <BookMarked size={18} />
+              </div>
               <div>
-                <span className="font-bold text-text-primary block">Current Position</span>
-                <span className="text-[10px] text-text-muted mt-0.5 block">Surah {quranProgress.lastSurah}, Ayah {quranProgress.lastAyah}</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase block tracking-wider">Current Reading Position</span>
+                <span className="text-sm font-extrabold text-text-primary block mt-0.5">
+                  Surah {quranProgress.lastSurah}, Ayah {quranProgress.lastAyah}
+                </span>
+                <span className="text-[9px] text-text-muted block mt-0.5">
+                  {quranSurahs.find(s => s.num === quranProgress.lastSurah)?.name}
+                </span>
               </div>
             </div>
-            <div className="text-right">
-              <span className="font-bold text-text-primary block">Total Pages Logged</span>
-              <span className="text-[10px] text-primary font-extrabold mt-0.5 block">{quranProgress.pagesRead} pages</span>
+
+            {/* Total logged pages */}
+            <div className="p-3.5 rounded-xl border border-accent/10 bg-accent/5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center text-accent border border-accent/20">
+                <Trophy size={18} />
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider font-extrabold">Total Progress logged</span>
+                  <span className="text-[10px] font-extrabold text-primary">{Math.min(100, Math.round((quranProgress.pagesRead / 604) * 100))}% of Khatm</span>
+                </div>
+                <span className="text-sm font-extrabold text-text-primary block mt-0.5">
+                  {quranProgress.pagesRead} <span className="text-xs font-semibold text-text-secondary">/ 604 pages</span>
+                </span>
+                <div className="w-full h-1.5 bg-border-color rounded-full overflow-hidden mt-1.5">
+                  <div 
+                    className="h-full bg-primary rounded-full transition-all duration-500" 
+                    style={{ width: `${Math.min(100, (quranProgress.pagesRead / 604) * 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
