@@ -4,8 +4,17 @@ import { dbService, isSupabaseConfigured } from '../services/supabase';
 
 export interface PrayerLog {
   prayer_name: string;
-  status: 'completed' | 'mosque' | 'congregation' | 'missed' | 'delayed' | 'outside';
+  status: string;
   date: string;
+}
+
+export interface QuranLog {
+  id: string;
+  date: string;
+  amount: number;
+  surah: number;
+  ayah: number;
+  mode: 'pages' | 'ayahs';
 }
 
 export interface QuranProgress {
@@ -39,6 +48,7 @@ export interface Achievement {
 interface DeenState {
   prayerLogs: PrayerLog[];
   quranProgress: QuranProgress;
+  quranLogs: QuranLog[];
   dhikrLogs: DhikrLog[];
   nawafilLogs: NawafilLog[];
   xp: number;
@@ -51,9 +61,11 @@ interface DeenState {
   setUserId: (id: string) => void;
   syncSpiritualData: () => Promise<void>;
   syncOfflineData: () => Promise<void>;
-  logPrayer: (prayerName: string, status: PrayerLog['status'], date: string) => void;
+  logPrayer: (prayerName: string, status: string, date: string) => void;
   logNawafil: (prayerName: string, date: string) => void;
   updateQuranProgress: (amount: number, surah: number, ayah: number, mode: 'pages' | 'ayahs') => void;
+  editQuranLog: (id: string, amount: number, surah: number, ayah: number, mode: 'pages' | 'ayahs', date: string) => void;
+  deleteQuranLog: (id: string) => void;
   logDhikr: (name: string, count: number, date: string) => void;
   addXp: (amount: number) => void;
   getDeenScore: () => number;
@@ -98,6 +110,7 @@ const INITIAL_STATE = getStoredDeenState() || {
     targetPages: 604,
     completedJuz: []
   },
+  quranLogs: [],
   dhikrLogs: [],
   nawafilLogs: [],
   xp: 0,
@@ -110,13 +123,14 @@ const INITIAL_STATE = getStoredDeenState() || {
 export const useDeenStore = create<DeenState>((set, get) => {
   const saveState = (newState: Partial<DeenState>) => {
     const currentState = { ...get(), ...newState };
-    const { logPrayer, logNawafil, updateQuranProgress, logDhikr, addXp, getDeenScore, unlockAchievement, resetAll, setUserId, syncSpiritualData, syncOfflineData, ...dataToSave } = currentState;
+    const { logPrayer, logNawafil, updateQuranProgress, editQuranLog, deleteQuranLog, logDhikr, addXp, getDeenScore, unlockAchievement, resetAll, setUserId, syncSpiritualData, syncOfflineData, ...dataToSave } = currentState;
     localStorage.setItem('deenos_spiritual_state', JSON.stringify(dataToSave));
   };
 
   return {
     ...INITIAL_STATE,
     nawafilLogs: INITIAL_STATE.nawafilLogs || [],
+    quranLogs: INITIAL_STATE.quranLogs || [],
 
     setUserId: (id: string) => {
       set({ userId: id });
@@ -209,37 +223,56 @@ export const useDeenStore = create<DeenState>((set, get) => {
       }
     },
 
-    logPrayer: (prayerName: string, status: PrayerLog['status'], date: string) => {
+    logPrayer: (prayerName: string, status: string, date: string) => {
       const currentLogs = get().prayerLogs;
       const filtered = currentLogs.filter(
         (log: PrayerLog) => !(log.prayer_name === prayerName && log.date === date)
       );
       
-      const updatedLogs = [...filtered, { prayer_name: prayerName, status, date }];
+      const existingLog = currentLogs.find(
+        (log: PrayerLog) => log.prayer_name === prayerName && log.date === date
+      );
+
+      const updatedLogs = status 
+        ? [...filtered, { prayer_name: prayerName, status, date }]
+        : filtered;
+
       set({ prayerLogs: updatedLogs });
       saveState({ prayerLogs: updatedLogs });
 
       // Sync with Supabase DDL
-      dbService.logPrayer(get().userId, prayerName, status, date);
-
-      let xpEarned = 0;
-      if (status === 'completed' || status === 'outside') xpEarned = 10;
-      else if (status === 'congregation') xpEarned = 15;
-      else if (status === 'mosque') xpEarned = 25;
-      else if (status === 'delayed') xpEarned = 5;
-
-      if (xpEarned > 0) {
-        get().addXp(xpEarned);
+      if (status) {
+        dbService.logPrayer(get().userId, prayerName, status, date);
       }
 
-      get().unlockAchievement('first_prayer');
+      // Calculate XP diff
+      const getStatusXp = (stat: string | null) => {
+        if (!stat || stat === 'missed') return 0;
+        const opts = stat.split(',');
+        if (opts.includes('delayed')) return 5;
+        if (opts.includes('mosque')) return 25;
+        if (opts.includes('congregation')) return 15;
+        return 10; // completed or outside
+      };
+
+      const prevXp = existingLog ? getStatusXp(existingLog.status) : 0;
+      const newXp = getStatusXp(status);
+      const xpDiff = newXp - prevXp;
+
+      if (xpDiff !== 0) {
+        get().addXp(xpDiff);
+      }
+
+      if (status && !status.includes('missed')) {
+        get().unlockAchievement('first_prayer');
+      }
       
-      if (status === 'mosque' || status === 'congregation') {
+      if (status && (status.includes('mosque') || status.includes('congregation'))) {
         get().unlockAchievement('congregation_salah');
       }
 
       const prayersToday = updatedLogs.filter(
-        (log: PrayerLog) => log.date === date && (log.status === 'completed' || log.status === 'outside' || log.status === 'mosque' || log.status === 'congregation')
+        (log: PrayerLog) => log.date === date && (log.status.includes('completed') || log.status.includes('outside') || log.status.includes('mosque') || log.status.includes('congregation'))
       );
       if (prayersToday.length === 5) {
         get().unlockAchievement('five_prayers_day');
@@ -287,9 +320,19 @@ export const useDeenStore = create<DeenState>((set, get) => {
         lastSurah: surah,
         lastAyah: ayah
       };
+
+      const newLog: QuranLog = {
+        id: crypto.randomUUID(),
+        date: new Date().toISOString().split('T')[0],
+        amount,
+        surah,
+        ayah,
+        mode
+      };
+      const updatedLogs = [...(get().quranLogs || []), newLog];
       
-      set({ quranProgress: updated });
-      saveState({ quranProgress: updated });
+      set({ quranProgress: updated, quranLogs: updatedLogs });
+      saveState({ quranProgress: updated, quranLogs: updatedLogs });
       
       // Sync with Supabase DDL
       dbService.syncQuranProgress(get().userId, {
@@ -302,6 +345,95 @@ export const useDeenStore = create<DeenState>((set, get) => {
 
       get().addXp(xpEarned);
       get().unlockAchievement('quran_start');
+    },
+
+    editQuranLog: (id: string, amount: number, surah: number, ayah: number, mode: 'pages' | 'ayahs', date: string) => {
+      const logs = get().quranLogs || [];
+      const updatedLogs = logs.map(log => log.id === id ? { ...log, amount, surah, ayah, mode, date } : log);
+      
+      let totalPagesRead = 0;
+      let lastSurah = 1;
+      let lastAyah = 1;
+      
+      const sortedLogs = [...updatedLogs].sort((a, b) => a.date.localeCompare(b.date));
+      if (sortedLogs.length > 0) {
+        const latest = sortedLogs[sortedLogs.length - 1];
+        lastSurah = latest.surah;
+        lastAyah = latest.ayah;
+      }
+      
+      updatedLogs.forEach(log => {
+        const pages = log.mode === 'pages' ? log.amount : Math.max(1, Math.round(log.amount / 15));
+        totalPagesRead += pages;
+      });
+      
+      const quranProgress = {
+        ...get().quranProgress,
+        pagesRead: totalPagesRead,
+        lastSurah,
+        lastAyah
+      };
+      
+      set({ quranLogs: updatedLogs, quranProgress });
+      saveState({ quranLogs: updatedLogs, quranProgress });
+      
+      dbService.syncQuranProgress(get().userId, {
+        surah_number: lastSurah,
+        ayah_number: lastAyah,
+        page_number: Math.min(604, Math.floor(totalPagesRead / 20) + 1),
+        juz_number: Math.min(30, Math.floor(totalPagesRead / 20) + 1),
+        total_pages_read: totalPagesRead
+      });
+    },
+
+    deleteQuranLog: (id: string) => {
+      const logs = get().quranLogs || [];
+      const targetLog = logs.find(l => l.id === id);
+      if (!targetLog) return;
+      
+      const updatedLogs = logs.filter(log => log.id !== id);
+      
+      let totalPagesRead = 0;
+      let lastSurah = 1;
+      let lastAyah = 1;
+      
+      const sortedLogs = [...updatedLogs].sort((a, b) => a.date.localeCompare(b.date));
+      if (sortedLogs.length > 0) {
+        const latest = sortedLogs[sortedLogs.length - 1];
+        lastSurah = latest.surah;
+        lastAyah = latest.ayah;
+      }
+      
+      updatedLogs.forEach(log => {
+        const pages = log.mode === 'pages' ? log.amount : Math.max(1, Math.round(log.amount / 15));
+        totalPagesRead += pages;
+      });
+      
+      const quranProgress = {
+        ...get().quranProgress,
+        pagesRead: totalPagesRead,
+        lastSurah,
+        lastAyah
+      };
+      
+      let xpDeducted = 0;
+      if (targetLog.mode === 'pages') {
+        xpDeducted = targetLog.amount * 15;
+      } else {
+        xpDeducted = targetLog.amount * 1;
+      }
+      const newXp = Math.max(0, get().xp - xpDeducted);
+      
+      set({ quranLogs: updatedLogs, quranProgress, xp: newXp });
+      saveState({ quranLogs: updatedLogs, quranProgress, xp: newXp });
+      
+      dbService.syncQuranProgress(get().userId, {
+        surah_number: lastSurah,
+        ayah_number: lastAyah,
+        page_number: Math.min(604, Math.floor(totalPagesRead / 20) + 1),
+        juz_number: Math.min(30, Math.floor(totalPagesRead / 20) + 1),
+        total_pages_read: totalPagesRead
+      });
     },
 
     logDhikr: (name: string, count: number, date: string) => {
@@ -382,7 +514,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
       const todayDhikr = get().dhikrLogs.filter((log: DhikrLog) => log.date === today);
       
       const positiveSalahCount = todayLogs.filter(
-        (log: PrayerLog) => log.status === 'completed' || log.status === 'outside' || log.status === 'mosque' || log.status === 'congregation' || log.status === 'delayed'
+        (log: PrayerLog) => log.status.includes('completed') || log.status.includes('outside') || log.status.includes('mosque') || log.status.includes('congregation') || log.status.includes('delayed')
       ).length;
       const salahScore = Math.min(50, positiveSalahCount * 10);
 
@@ -404,6 +536,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
           targetPages: 604,
           completedJuz: []
         },
+        quranLogs: [],
         dhikrLogs: [],
         nawafilLogs: [],
         xp: 0,

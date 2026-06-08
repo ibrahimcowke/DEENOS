@@ -385,6 +385,13 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 15px var(--primary-glow);
 }
 
+/* Date picker webkit indicator dark scheme visibility fix */
+[data-color-scheme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(0.95);
+  cursor: pointer;
+}
+
+
 .orb-glow {
   filter: drop-shadow(0 0 20px var(--primary-glow));
 }

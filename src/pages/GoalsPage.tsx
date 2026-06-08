@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { geminiService } from '../services/gemini';
-import { Target, PlusCircle, Sparkles, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { Target, PlusCircle, Sparkles, CheckSquare, Square, Trash2, Calendar } from 'lucide-react';
 
 interface Goal {
   id: string;
@@ -15,6 +15,8 @@ interface Goal {
 }
 
 export const GoalsPage: React.FC = () => {
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
   const [goals, setGoals] = useState<Goal[]>(() => {
     try {
       const saved = localStorage.getItem('deenos_goals');
@@ -253,67 +255,101 @@ export const GoalsPage: React.FC = () => {
         </div>
 
         {/* Right: Goal creator form */}
-        <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 h-fit space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">Create New Milestone</h3>
+        <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 h-fit space-y-4 shadow-xl">
+          <div className="flex items-center gap-2 mb-1">
+            <Target className="text-primary animate-pulse" size={16} />
+            <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">Create New Milestone</h3>
+          </div>
           
           <form onSubmit={handleAddGoal} className="space-y-4">
             <div>
-              <label className="text-[10px] font-bold text-text-secondary block mb-1">Goal / Objective</label>
+              <label className="text-[10px] font-bold text-text-secondary block mb-1.5 uppercase tracking-wider">Goal / Objective</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="E.g. Memorize Surah Al-Kahf"
-                className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary"
+                className="w-full border border-border-color rounded-xl px-3.5 py-2.5 text-xs bg-bg-primary/50 focus:outline-none focus:border-primary text-text-primary focus:ring-1 focus:ring-primary/20 transition-all"
                 required
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-text-secondary block mb-1">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as Goal['category'])}
-                className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary"
-              >
-                <option value="deen">Spiritual (Deen)</option>
-                <option value="habits">Habit Mastery</option>
-                <option value="finance">Halal Finance</option>
-                <option value="reading">Islamic Reading</option>
-                <option value="personal">Personal Development</option>
-              </select>
+              <label className="text-[10px] font-bold text-text-secondary block mb-1.5 uppercase tracking-wider">Category</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'deen' as const, label: 'Deen', icon: '🕌' },
+                  { key: 'habits' as const, label: 'Habits', icon: '⚡' },
+                  { key: 'finance' as const, label: 'Finance', icon: '💰' },
+                  { key: 'reading' as const, label: 'Reading', icon: '📖' },
+                  { key: 'personal' as const, label: 'Personal', icon: '🌱' }
+                ].map((cat) => (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => setCategory(cat.key)}
+                    className={`p-2.5 rounded-xl border text-[11px] font-bold text-left transition duration-200 cursor-pointer flex items-center gap-2 ${
+                      category === cat.key
+                        ? 'bg-primary/10 border-primary text-primary font-black shadow-sm'
+                        : 'bg-bg-primary/30 border-border-color text-text-secondary hover:border-text-muted hover:bg-bg-primary/50'
+                    }`}
+                  >
+                    <span className="text-sm">{cat.icon}</span>
+                    <span>{cat.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="text-[10px] font-bold text-text-secondary block mb-1">Target Date</label>
-                <input
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary"
-                />
+                <label className="text-[10px] font-bold text-text-secondary block mb-1.5 uppercase tracking-wider">Target Date</label>
+                <div 
+                  onClick={() => dateInputRef.current?.showPicker()}
+                  className="w-full border border-border-color rounded-xl px-3 py-2.5 bg-bg-primary/30 flex items-center justify-between cursor-pointer focus-within:border-primary focus-within:bg-bg-primary/50 transition-all duration-200 hover:border-text-muted"
+                >
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full bg-transparent border-0 p-0 text-xs text-text-primary focus:outline-none cursor-pointer"
+                  />
+                  <Calendar size={14} className="text-text-muted pointer-events-none" />
+                </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-text-secondary block mb-1">Priority</label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as Goal['priority'])}
-                  className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary"
-                >
-                  <option value="high">High 🔴</option>
-                  <option value="medium">Medium 🟡</option>
-                  <option value="low">Low 🔵</option>
-                </select>
+                <label className="text-[10px] font-bold text-text-secondary block mb-1.5 uppercase tracking-wider">Priority</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: 'low' as const, label: 'Low', activeColor: 'bg-blue-500/15 border-blue-500 text-blue-400 font-extrabold shadow-sm' },
+                    { key: 'medium' as const, label: 'Medium', activeColor: 'bg-amber-500/15 border-amber-500 text-amber-400 font-extrabold shadow-sm' },
+                    { key: 'high' as const, label: 'High', activeColor: 'bg-red-500/15 border-red-500 text-red-400 font-extrabold shadow-sm' }
+                  ].map((prio) => (
+                    <button
+                      key={prio.key}
+                      type="button"
+                      onClick={() => setPriority(prio.key)}
+                      className={`py-2 px-1 rounded-xl border text-[11px] text-center transition duration-200 cursor-pointer ${
+                        priority === prio.key
+                          ? prio.activeColor
+                          : 'bg-bg-primary/30 border-border-color text-text-secondary hover:border-text-muted hover:bg-bg-primary/50'
+                      }`}
+                    >
+                      {prio.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow cursor-pointer"
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-orange-500/10 hover:scale-[1.01] hover:shadow-orange-500/20 active:scale-[0.99] mt-6 cursor-pointer"
             >
-              <PlusCircle size={14} />
+              <PlusCircle size={15} />
               Lock Goal
             </button>
           </form>

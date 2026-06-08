@@ -1,6 +1,5 @@
 import React from 'react';
 import { useDeenStore } from '../store/deenStore';
-import type { PrayerLog } from '../store/deenStore';
 import { MoonStar, BarChart3, TrendingUp, Sparkles } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
 import { useTranslation } from 'react-i18next';
@@ -28,12 +27,46 @@ export const SalahTracker: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
 
   const getPrayerStatus = (prayerKey: string) => {
-    const log = prayerLogs.find((l: PrayerLog) => l.date === today && l.prayer_name === prayerKey);
+    const log = prayerLogs.find((l) => l.date === today && l.prayer_name === prayerKey);
     return log ? log.status : null;
   };
 
-  const handleLog = (prayerKey: string, status: PrayerLog['status']) => {
-    logPrayer(prayerKey, status, today);
+  const handleToggle = (prayerKey: string, option: string) => {
+    const currentStatus = getPrayerStatus(prayerKey);
+    let newStatus = '';
+
+    if (option === 'missed') {
+      newStatus = currentStatus === 'missed' ? '' : 'missed';
+    } else if (option === 'completed') {
+      const hasPrayed = currentStatus && currentStatus !== 'missed' && currentStatus.includes('completed');
+      newStatus = hasPrayed ? '' : 'completed';
+    } else {
+      // Modifiers
+      let options = currentStatus && currentStatus !== 'missed' ? currentStatus.split(',').filter(Boolean) : [];
+      
+      if (options.includes(option)) {
+        options = options.filter(o => o !== option);
+      } else {
+        options.push(option);
+      }
+      
+      // Ensure 'completed' tag is present if we have modifiers
+      if (options.length > 0 && !options.includes('completed')) {
+        options.push('completed');
+      }
+
+      // Mutual exclusivity for mosque vs outside
+      if (option === 'mosque' && options.includes('outside')) {
+        options = options.filter(o => o !== 'outside');
+      }
+      if (option === 'outside' && options.includes('mosque')) {
+        options = options.filter(o => o !== 'mosque');
+      }
+      
+      newStatus = options.join(',');
+    }
+
+    logPrayer(prayerKey, newStatus, today);
   };
 
   const isNawafilLogged = (key: string) => {
@@ -64,26 +97,6 @@ export const SalahTracker: React.FC = () => {
     { name: 'Missed', value: 2 }
   ];
 
-  const getStatusStyle = (status: string | null, btnStatus: PrayerLog['status']) => {
-    const isActive = status === btnStatus;
-    if (!isActive) return 'bg-bg-tertiary border-border-color text-text-secondary hover:bg-bg-primary hover:border-text-muted';
-    
-    switch (btnStatus) {
-      case 'mosque':
-        return 'bg-emerald-600 text-white border-emerald-700 shadow';
-      case 'congregation':
-        return 'bg-teal-600 text-white border-teal-700 shadow';
-      case 'completed':
-        return 'bg-primary text-white border-primary-hover shadow';
-      case 'outside':
-        return 'bg-blue-600 text-white border-blue-700 shadow';
-      case 'delayed':
-        return 'bg-amber-500 text-white border-amber-600 shadow';
-      case 'missed':
-        return 'bg-red-500 text-white border-red-600 shadow';
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40">
@@ -97,7 +110,10 @@ export const SalahTracker: React.FC = () => {
 
         <div className="space-y-4">
           {prayers.map((p) => {
-            const activeStatus = getPrayerStatus(p.key);
+            const status = getPrayerStatus(p.key) || '';
+            const hasPrayed = status !== 'missed' && status.includes('completed');
+            const isMissed = status === 'missed';
+
             return (
               <div 
                 key={p.key} 
@@ -113,43 +129,80 @@ export const SalahTracker: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <button 
-                    onClick={() => handleLog(p.key, 'mosque')}
-                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${getStatusStyle(activeStatus, 'mosque')}`}
-                  >
-                    Mosque (25XP)
-                  </button>
-                  <button 
-                    onClick={() => handleLog(p.key, 'congregation')}
-                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${getStatusStyle(activeStatus, 'congregation')}`}
-                  >
-                    Jama'ah (15XP)
-                  </button>
-                  <button 
-                    onClick={() => handleLog(p.key, 'completed')}
-                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${getStatusStyle(activeStatus, 'completed')}`}
-                  >
-                    Home (10XP)
-                  </button>
-                  <button 
-                    onClick={() => handleLog(p.key, 'outside')}
-                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${getStatusStyle(activeStatus, 'outside')}`}
-                  >
-                    Outside (10XP)
-                  </button>
-                  <button 
-                    onClick={() => handleLog(p.key, 'delayed')}
-                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${getStatusStyle(activeStatus, 'delayed')}`}
-                  >
-                    Delayed (5XP)
-                  </button>
-                  <button 
-                    onClick={() => handleLog(p.key, 'missed')}
-                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${getStatusStyle(activeStatus, 'missed')}`}
-                  >
-                    Missed
-                  </button>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  {/* Primary Status Controls */}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleToggle(p.key, 'completed')}
+                      className={`px-4 py-2 rounded-xl border text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                        hasPrayed 
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-sm font-black'
+                          : 'bg-bg-tertiary border-border-color text-text-secondary hover:border-text-muted'
+                      }`}
+                    >
+                      <span>Prayed</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleToggle(p.key, 'missed')}
+                      className={`px-4 py-2 rounded-xl border text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                        isMissed 
+                          ? 'bg-red-500/20 border-red-500/40 text-red-400 shadow-sm font-black'
+                          : 'bg-bg-tertiary border-border-color text-text-secondary hover:border-text-muted'
+                      }`}
+                    >
+                      <span>Missed</span>
+                    </button>
+                  </div>
+
+                  {/* Multi-Selection Sub-options (Only shown if prayed) */}
+                  {hasPrayed && (
+                    <div className="flex flex-wrap gap-2 border-t sm:border-t-0 sm:border-l border-border-color/60 pt-3 sm:pt-0 sm:pl-3 w-full sm:w-auto">
+                      <button 
+                        onClick={() => handleToggle(p.key, 'mosque')}
+                        className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center gap-1 ${
+                          status.includes('mosque')
+                            ? 'bg-emerald-600 border-emerald-700 text-white shadow font-black'
+                            : 'bg-bg-tertiary border-border-color text-text-muted hover:border-text-secondary'
+                        }`}
+                      >
+                        <span>Mosque (+15 XP)</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => handleToggle(p.key, 'congregation')}
+                        className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center gap-1 ${
+                          status.includes('congregation')
+                            ? 'bg-teal-600 border-teal-700 text-white shadow font-black'
+                            : 'bg-bg-tertiary border-border-color text-text-muted hover:border-text-secondary'
+                        }`}
+                      >
+                        <span>Jama'ah (+5 XP)</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => handleToggle(p.key, 'outside')}
+                        className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center gap-1 ${
+                          status.includes('outside')
+                            ? 'bg-blue-600 border-blue-700 text-white shadow font-black'
+                            : 'bg-bg-tertiary border-border-color text-text-muted hover:border-text-secondary'
+                        }`}
+                      >
+                        <span>Outside</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => handleToggle(p.key, 'delayed')}
+                        className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center gap-1 ${
+                          status.includes('delayed')
+                            ? 'bg-amber-500 border-amber-600 text-white shadow font-black'
+                            : 'bg-bg-tertiary border-border-color text-text-muted hover:border-text-secondary'
+                        }`}
+                      >
+                        <span>Delayed</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -254,4 +307,5 @@ export const SalahTracker: React.FC = () => {
     </div>
   );
 };
+
 export default SalahTracker;
