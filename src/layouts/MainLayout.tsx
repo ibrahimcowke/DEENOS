@@ -84,9 +84,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, set
         {/* Sidebar Header Brand */}
         <div className="p-4 flex items-center justify-between border-b border-border-color">
           <div className="flex items-center gap-2 overflow-hidden">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white font-black shrink-0 text-sm shadow">
-              D™
-            </div>
+            <img src="/logo.png" alt="DeenOs Logo" className="w-8 h-8 rounded-xl shrink-0 shadow object-cover" />
             {!sidebarCollapsed && (
               <span className="font-black tracking-tighter text-lg bg-gradient-to-r from-text-primary to-text-secondary bg-clip-text text-transparent">
                 DEENOS™
