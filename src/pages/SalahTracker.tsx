@@ -113,8 +113,6 @@ export const SalahTracker: React.FC = () => {
           <div className="hidden md:flex flex-col gap-4">
             {prayers.map((p) => {
               const status = getPrayerStatus(p.key) || '';
-              const hasPrayed = status !== 'missed' && status.includes('completed');
-              const isMissed = status === 'missed';
 
               return (
                 <div 
@@ -131,80 +129,29 @@ export const SalahTracker: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-row items-center gap-3">
-                    {/* Primary Status Controls */}
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleToggle(p.key, 'completed')}
-                        className={`px-4 py-2 rounded-xl border text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                          hasPrayed 
-                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-sm font-black'
-                            : 'bg-bg-tertiary border-border-color text-text-secondary hover:border-text-muted'
-                        }`}
-                      >
-                        <span>Prayed</span>
-                      </button>
-                      
-                      <button 
-                        onClick={() => handleToggle(p.key, 'missed')}
-                        className={`px-4 py-2 rounded-xl border text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                          isMissed 
-                            ? 'bg-red-500/20 border-red-500/40 text-red-400 shadow-sm font-black'
-                            : 'bg-bg-tertiary border-border-color text-text-secondary hover:border-text-muted'
-                        }`}
-                      >
-                        <span>Missed</span>
-                      </button>
-                    </div>
-
-                    {/* Multi-Selection Sub-options (Only shown if prayed) */}
-                    {hasPrayed && (
-                      <div className="flex flex-wrap gap-2 border-l border-border-color/60 pl-3 w-auto">
-                        <button 
-                          onClick={() => handleToggle(p.key, 'mosque')}
-                          className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center gap-1 ${
-                            status.includes('mosque')
-                              ? 'bg-emerald-600 border-emerald-700 text-white shadow font-black'
-                              : 'bg-bg-tertiary border-border-color text-text-muted hover:border-text-secondary'
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: 'jamaah_mosque', label: "Jama'ah in Mosque (+25 XP)", activeClass: 'bg-emerald-600 border-emerald-700 text-white shadow font-black' },
+                      { key: 'individual_mosque', label: 'Individual in Mosque (+15 XP)', activeClass: 'bg-teal-600 border-teal-700 text-white shadow font-black' },
+                      { key: 'individual_outside', label: 'Individual Outside (+10 XP)', activeClass: 'bg-blue-600 border-blue-700 text-white shadow font-black' },
+                      { key: 'delayed', label: 'Delayed (+5 XP)', activeClass: 'bg-amber-500 border-amber-600 text-white shadow font-black' },
+                      { key: 'missed', label: 'Missed', activeClass: 'bg-red-500 border-red-600 text-white shadow font-black' }
+                    ].map((opt) => {
+                      const isActive = status === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => handleToggle(p.key, opt.key)}
+                          className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer ${
+                            isActive
+                              ? opt.activeClass
+                              : 'bg-bg-tertiary border-border-color text-text-secondary hover:border-text-muted'
                           }`}
                         >
-                          <span>Mosque (+15 XP)</span>
+                          {opt.label}
                         </button>
-                        
-                        <button 
-                          onClick={() => handleToggle(p.key, 'congregation')}
-                          className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center gap-1 ${
-                            status.includes('congregation')
-                              ? 'bg-teal-600 border-teal-700 text-white shadow font-black'
-                              : 'bg-bg-tertiary border-border-color text-text-muted hover:border-text-secondary'
-                          }`}
-                        >
-                          <span>Jama'ah (+5 XP)</span>
-                        </button>
-                        
-                        <button 
-                          onClick={() => handleToggle(p.key, 'outside')}
-                          className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center gap-1 ${
-                            status.includes('outside')
-                              ? 'bg-blue-600 border-blue-700 text-white shadow font-black'
-                              : 'bg-bg-tertiary border-border-color text-text-muted hover:border-text-secondary'
-                          }`}
-                        >
-                          <span>Outside</span>
-                        </button>
-                        
-                        <button 
-                          onClick={() => handleToggle(p.key, 'delayed')}
-                          className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center gap-1 ${
-                            status.includes('delayed')
-                              ? 'bg-amber-500 border-amber-600 text-white shadow font-black'
-                              : 'bg-bg-tertiary border-border-color text-text-muted hover:border-text-secondary'
-                          }`}
-                        >
-                          <span>Delayed</span>
-                        </button>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -215,17 +162,21 @@ export const SalahTracker: React.FC = () => {
           <div className="flex flex-col gap-4 md:hidden">
             {prayers.map((p) => {
               const status = getPrayerStatus(p.key) || '';
-              const hasPrayed = status !== 'missed' && status.includes('completed');
-              const isMissed = status === 'missed';
               
-              // Calculate XP for this card
+              // Status flags
+              const isPrayed = status === 'jamaah_mosque' || status === 'individual_mosque' || status === 'individual_outside';
+              const isDelayed = status === 'delayed';
+              const isMissed = status === 'missed';
+
+              // Calculate XP
               const getStatusXp = (stat: string) => {
-                if (!stat || stat === 'missed') return 0;
-                const opts = stat.split(',');
-                if (opts.includes('delayed')) return 5;
-                if (opts.includes('mosque')) return 25;
-                if (opts.includes('congregation')) return 15;
-                return 10;
+                switch (stat) {
+                  case 'jamaah_mosque': return 25;
+                  case 'individual_mosque': return 15;
+                  case 'individual_outside': return 10;
+                  case 'delayed': return 5;
+                  default: return 0;
+                }
               };
               const currentXp = getStatusXp(status);
 
@@ -233,8 +184,10 @@ export const SalahTracker: React.FC = () => {
                 <div 
                   key={p.key}
                   className={`p-4 rounded-2xl border transition-all duration-300 ${
-                    hasPrayed 
+                    isPrayed 
                       ? 'border-emerald-500/20 bg-emerald-500/5 shadow-sm shadow-emerald-500/5'
+                      : isDelayed
+                      ? 'border-amber-500/20 bg-amber-500/5 shadow-sm shadow-amber-500/5'
                       : isMissed 
                       ? 'border-red-500/20 bg-red-500/5 shadow-sm shadow-red-500/5'
                       : 'border-border-color bg-bg-secondary/60'
@@ -244,7 +197,13 @@ export const SalahTracker: React.FC = () => {
                   <div className="flex items-center justify-between mb-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-2.5 h-2.5 rounded-full ${
-                        hasPrayed ? 'bg-emerald-500 shadow-md shadow-emerald-500/50' : isMissed ? 'bg-red-500 shadow-md shadow-red-500/50' : 'bg-text-muted/40'
+                        isPrayed 
+                          ? 'bg-emerald-500 shadow-md shadow-emerald-500/50' 
+                          : isDelayed
+                          ? 'bg-amber-500 shadow-md shadow-amber-500/50'
+                          : isMissed 
+                          ? 'bg-red-500 shadow-md shadow-red-500/50' 
+                          : 'bg-text-muted/40'
                       }`} />
                       <div>
                         <span className="text-sm font-black text-text-primary block tracking-wide">{p.label}</span>
@@ -258,75 +217,33 @@ export const SalahTracker: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Primary Action Buttons */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => handleToggle(p.key, 'completed')}
-                      className={`py-2 px-3 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 ${
-                        hasPrayed
-                          ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-450 font-extrabold shadow-sm'
-                          : 'bg-bg-tertiary border-border-color text-text-secondary hover:border-text-muted'
-                      }`}
-                    >
-                      Prayed
-                    </button>
-                    <button
-                      onClick={() => handleToggle(p.key, 'missed')}
-                      className={`py-2 px-3 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 ${
-                        isMissed
-                          ? 'bg-red-500/10 border-red-500/40 text-red-450 font-extrabold shadow-sm'
-                          : 'bg-bg-tertiary border-border-color text-text-secondary hover:border-text-muted'
-                      }`}
-                    >
-                      Missed
-                    </button>
+                  {/* Options Grid */}
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {[
+                      { key: 'jamaah_mosque', label: "🕌👥 Mosque Jama'ah", activeClass: 'bg-emerald-600 border-emerald-700 text-white shadow font-black', colSpan: false },
+                      { key: 'individual_mosque', label: '🕌👤 Mosque Alone', activeClass: 'bg-teal-600 border-teal-700 text-white shadow font-black', colSpan: false },
+                      { key: 'individual_outside', label: '🏠👤 Prayed Outside', activeClass: 'bg-blue-600 border-blue-700 text-white shadow font-black', colSpan: false },
+                      { key: 'delayed', label: '⏳ Prayed Delayed', activeClass: 'bg-amber-500 border-amber-600 text-white shadow font-black', colSpan: false },
+                      { key: 'missed', label: '❌ Missed Prayer', activeClass: 'bg-red-500 border-red-600 text-white shadow font-black', colSpan: true }
+                    ].map((opt) => {
+                      const isActive = status === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => handleToggle(p.key, opt.key)}
+                          className={`py-2.5 px-3 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 ${
+                            opt.colSpan ? 'col-span-2' : ''
+                          } ${
+                            isActive
+                              ? opt.activeClass
+                              : 'bg-bg-tertiary border-border-color text-text-secondary hover:border-text-muted hover:bg-bg-primary/50'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
                   </div>
-
-                  {/* Sub-options Grid */}
-                  {hasPrayed && (
-                    <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border-color/50 animate-in fade-in duration-200">
-                      <button
-                        onClick={() => handleToggle(p.key, 'mosque')}
-                        className={`p-2 rounded-xl border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
-                          status.includes('mosque')
-                            ? 'bg-emerald-600 border-emerald-700 text-white shadow font-black'
-                            : 'bg-bg-tertiary/40 border-border-color text-text-muted hover:border-text-secondary'
-                        }`}
-                      >
-                        🕌 Mosque
-                      </button>
-                      <button
-                        onClick={() => handleToggle(p.key, 'congregation')}
-                        className={`p-2 rounded-xl border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
-                          status.includes('congregation')
-                            ? 'bg-teal-600 border-teal-700 text-white shadow font-black'
-                            : 'bg-bg-tertiary/40 border-border-color text-text-muted hover:border-text-secondary'
-                        }`}
-                      >
-                        👥 Jama'ah
-                      </button>
-                      <button
-                        onClick={() => handleToggle(p.key, 'outside')}
-                        className={`p-2 rounded-xl border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
-                          status.includes('outside')
-                            ? 'bg-blue-600 border-blue-700 text-white shadow font-black'
-                            : 'bg-bg-tertiary/40 border-border-color text-text-muted hover:border-text-secondary'
-                        }`}
-                      >
-                        💼 Outside
-                      </button>
-                      <button
-                        onClick={() => handleToggle(p.key, 'delayed')}
-                        className={`p-2 rounded-xl border text-[9px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
-                          status.includes('delayed')
-                            ? 'bg-amber-500 border-amber-600 text-white shadow font-black'
-                            : 'bg-bg-tertiary/40 border-border-color text-text-muted hover:border-text-secondary'
-                        }`}
-                      >
-                        ⏳ Delayed
-                      </button>
-                    </div>
-                  )}
                 </div>
               );
             })}

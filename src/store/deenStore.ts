@@ -247,12 +247,20 @@ export const useDeenStore = create<DeenState>((set, get) => {
 
       // Calculate XP diff
       const getStatusXp = (stat: string | null) => {
-        if (!stat || stat === 'missed') return 0;
-        const opts = stat.split(',');
-        if (opts.includes('delayed')) return 5;
-        if (opts.includes('mosque')) return 25;
-        if (opts.includes('congregation')) return 15;
-        return 10; // completed or outside
+        if (!stat) return 0;
+        switch (stat) {
+          case 'jamaah_mosque':
+            return 25;
+          case 'individual_mosque':
+            return 15;
+          case 'individual_outside':
+            return 10;
+          case 'delayed':
+            return 5;
+          case 'missed':
+          default:
+            return 0;
+        }
       };
 
       const prevXp = existingLog ? getStatusXp(existingLog.status) : 0;
@@ -263,16 +271,16 @@ export const useDeenStore = create<DeenState>((set, get) => {
         get().addXp(xpDiff);
       }
 
-      if (status && !status.includes('missed')) {
+      if (status && status !== 'missed') {
         get().unlockAchievement('first_prayer');
       }
       
-      if (status && (status.includes('mosque') || status.includes('congregation'))) {
+      if (status && (status === 'jamaah_mosque' || status === 'individual_mosque')) {
         get().unlockAchievement('congregation_salah');
       }
 
       const prayersToday = updatedLogs.filter(
-        (log: PrayerLog) => log.date === date && (log.status.includes('completed') || log.status.includes('outside') || log.status.includes('mosque') || log.status.includes('congregation'))
+        (log: PrayerLog) => log.date === date && log.status !== 'missed' && log.status !== ''
       );
       if (prayersToday.length === 5) {
         get().unlockAchievement('five_prayers_day');
@@ -514,7 +522,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
       const todayDhikr = get().dhikrLogs.filter((log: DhikrLog) => log.date === today);
       
       const positiveSalahCount = todayLogs.filter(
-        (log: PrayerLog) => log.status.includes('completed') || log.status.includes('outside') || log.status.includes('mosque') || log.status.includes('congregation') || log.status.includes('delayed')
+        (log: PrayerLog) => log.status !== 'missed' && log.status !== ''
       ).length;
       const salahScore = Math.min(50, positiveSalahCount * 10);
 
