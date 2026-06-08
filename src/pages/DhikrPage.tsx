@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDeenStore } from '../store/deenStore';
 import { TasbihBeads } from '../components/TasbihBeads';
-import { Compass, Sparkles, Heart } from 'lucide-react';
+import { Compass, Sparkles, Heart, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const DhikrPage: React.FC = () => {
@@ -12,6 +12,7 @@ export const DhikrPage: React.FC = () => {
   const [sessionCount, setSessionCount] = useState<number>(0);
   const [target, setTarget] = useState<number>(33);
   const [customDhikrText, setCustomDhikrText] = useState<string>('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   const dhikrOptions = [
     { key: 'subhanallah', label: t('dhikr.subhanallah'), arabic: 'سُبْحَانَ ٱللَّٰهِ', desc: 'Glory be to Allah' },
@@ -73,7 +74,65 @@ export const DhikrPage: React.FC = () => {
         <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted mb-2">Select Supplication</h3>
           
-          <div className="flex flex-col gap-2">
+          {/* Mobile Select (Dropdown) */}
+          <div className="relative md:hidden">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full p-3.5 rounded-xl border text-left flex justify-between items-center transition cursor-pointer bg-bg-secondary/50 border-border-color text-text-secondary hover:border-text-muted"
+            >
+              <div>
+                <span className="text-xs font-bold block">
+                  {activeDhikrDetails ? activeDhikrDetails.label : 'Select Supplication'}
+                </span>
+                <span className="text-[10px] text-text-muted mt-0.5 block">
+                  {activeDhikrDetails ? activeDhikrDetails.desc : ''}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeDhikrDetails?.arabic && (
+                  <span className="text-sm font-semibold text-right text-text-primary pl-2">{activeDhikrDetails.arabic}</span>
+                )}
+                {isDropdownOpen ? <ChevronUp size={16} className="text-text-secondary animate-in fade-in duration-200" /> : <ChevronDown size={16} className="text-text-secondary animate-in fade-in duration-200" />}
+              </div>
+            </button>
+
+            {isDropdownOpen && (
+              <>
+                {/* Backdrop overlay to close the dropdown when clicking outside */}
+                <div 
+                  className="fixed inset-0 z-20 cursor-default" 
+                  onClick={() => setIsDropdownOpen(false)}
+                />
+                <div className="absolute z-30 left-0 right-0 mt-2 p-1.5 rounded-xl border border-border-color bg-bg-secondary/95 backdrop-blur-md shadow-xl flex flex-col gap-1 animate-in slide-in-from-top-2 duration-150">
+                  {dhikrOptions.map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => {
+                        handleDhikrChange(opt.key);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`p-3 rounded-lg text-left flex justify-between items-center transition cursor-pointer ${
+                        activeDhikr === opt.key
+                          ? 'bg-primary/10 text-primary font-bold'
+                          : 'hover:bg-bg-primary/50 text-text-secondary'
+                      }`}
+                    >
+                      <div>
+                        <span className="text-xs font-bold block">{opt.label}</span>
+                        <span className="text-[10px] text-text-muted mt-0.5 block">{opt.desc}</span>
+                      </div>
+                      {opt.arabic && (
+                        <span className="text-xs font-semibold text-right text-text-primary pl-2">{opt.arabic}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Desktop Select (Vertical List) */}
+          <div className="hidden md:flex flex-col gap-2">
             {dhikrOptions.map((opt) => (
               <button
                 key={opt.key}
