@@ -95,7 +95,13 @@
     "add_progress": "Log Reading Progress",
     "pages_read": "Pages Read",
     "ai_coach_title": "AI Quran Coach Suggestions",
-    "ai_suggestion_placeholder": "Based on your goals, Gemini suggests reading Surah Al-Mulk tonight before sleeping to gain protection in the grave."
+    "ai_suggestion_placeholder": "Based on your goals, Gemini suggests reading Surah Al-Mulk tonight before sleeping to gain protection in the grave.",
+    "history_title": "Quran progress logs",
+    "date": "Date",
+    "last_ayah": "Last Ayah",
+    "progress": "Progress",
+    "actions": "Actions",
+    "no_logs": "No progress logs found. Log your progress above to begin!"
   },
   "dhikr": {
     "tasbih_title": "Digital Tasbih",
@@ -210,5 +216,30 @@
     "shared_streaks": "Shared Streaks",
     "leaderboard": "Leaderboard",
     "challenges": "Global Challenges"
+  },
+  "enhancements": {
+    "qibla_tracker": "Qibla Finder & Prayer Times",
+    "detect_location": "Detect Geolocation",
+    "manual_coords": "Use Manual Coordinates",
+    "direction_to_makkah": "Direction to Makkah",
+    "degrees": "degrees",
+    "aligned": "Aligned! Facing Makkah",
+    "align_device": "Rotate the compass to align with Makkah",
+    "dua_library": "Dua & Supplications",
+    "read_times": "Read {{count}} times",
+    "study_notes": "Quranic Reflections & Study Notes",
+    "add_reflection": "Write Reflection Note",
+    "reflection_placeholder": "Write your reflection or Tafsir study here...",
+    "save_note": "Save Reflection",
+    "logged_reflections": "My Reflections Binder",
+    "hijri_planner": "Hijri Fasting Planner",
+    "white_days": "White Days (Ayyam al-Bidh)",
+    "sunnah_fasting": "Sunnah Fasting",
+    "moon_phase": "Current Moon Phase",
+    "charity_budgeter": "Charity (Sadaqah & Waqf)",
+    "charity_spent_month": "Charity Spent This Month",
+    "donation_target": "Monthly Donation Target",
+    "waqf_planner": "Waqf Planning Hub",
+    "log_donation": "Log Sadaqah Payment"
   }
 }

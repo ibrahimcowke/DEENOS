@@ -95,7 +95,13 @@
     "add_progress": "تسجيل التقدم في القراءة",
     "pages_read": "الصفحات المقروءة",
     "ai_coach_title": "توصيات معلم القرآن الذكي",
-    "ai_suggestion_placeholder": "بناءً على أهدافك، يقترح Gemini قراءة سورة الملك الليلة قبل النوم للحماية والتحصين."
+    "ai_suggestion_placeholder": "بناءً على أهدافك، يقترح Gemini قراءة سورة الملك الليلة قبل النوم للحماية والتحصين.",
+    "history_title": "سجلات تقدم القرآن",
+    "date": "التاريخ",
+    "last_ayah": "آخر آية",
+    "progress": "التقدم",
+    "actions": "الإجراءات",
+    "no_logs": "لم يتم العثور على سجلات تقدم. سجل تقدمك أعلاه للبدء!"
   },
   "dhikr": {
     "tasbih_title": "المسبحة الرقمية",
@@ -210,5 +216,30 @@
     "shared_streaks": "الالتزام المشترك",
     "leaderboard": "لوحة الصدارة",
     "challenges": "التحديات العالمية"
+  },
+  "enhancements": {
+    "qibla_tracker": "محدد القبلة ومواقيت الصلاة",
+    "detect_location": "تحديد الموقع الجغرافي",
+    "manual_coords": "استخدام إحداثيات يدوية",
+    "direction_to_makkah": "الاتجاه إلى مكة",
+    "degrees": "درجة",
+    "aligned": "محاذاة! مواجهة مكة",
+    "align_device": "قم بتدوير البوصلة للمحاذاة مع مكة",
+    "dua_library": "الأدعية والأذكار",
+    "read_times": "قرأت {{count}} مرات",
+    "study_notes": "تدبرات القرآن ودفتر الملاحظات",
+    "add_reflection": "اكتب ملاحظة تدبر",
+    "reflection_placeholder": "اكتب تدبرك أو دراستك للتفسير هنا...",
+    "save_note": "حفظ التدبر",
+    "logged_reflections": "دفتر تدبراتي المسجلة",
+    "hijri_planner": "مخطط الصيام الهجري",
+    "white_days": "الأيام البيض",
+    "sunnah_fasting": "صيام السنة",
+    "moon_phase": "طور القمر الحالي",
+    "charity_budgeter": "الصدقات والوقف",
+    "charity_spent_month": "الصدقات المنفقة هذا الشهر",
+    "donation_target": "هدف التبرع الشهري",
+    "waqf_planner": "مركز تخطيط الوقف",
+    "log_donation": "تسجيل صدقة"
   }
 }

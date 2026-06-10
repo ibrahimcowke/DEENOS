@@ -95,7 +95,13 @@
     "add_progress": "Diiwaangeli Horumarka Akhriska",
     "pages_read": "Bogagga la akhriyey",
     "ai_coach_title": "Talooyinka AI ee Qur'aanka",
-    "ai_suggestion_placeholder": "Iyada oo ku saleysan yoolalkaaga, Gemini wuxuu kuu soo jeedinayaa inaad akhriso Suurad Al-Mulk caawa intaadan seexan si aad u hesho badbaadada qabriga."
+    "ai_suggestion_placeholder": "Iyada oo ku saleysan yoolalkaaga, Gemini wuxuu kuu soo jeedinayaa inaad akhriso Suurad Al-Mulk caawa intaadan seexan si aad u hesho badbaadada qabriga.",
+    "history_title": "Diiwaanka horumarka Qur'aanka",
+    "date": "Taariikhda",
+    "last_ayah": "Aayaddii ugu dambaysay",
+    "progress": "Horumarka",
+    "actions": "Waxqabadka",
+    "no_logs": "Wax diiwaan horumar ah lama helin. Diiwaangeli horumarkaaga kor si aad u bilowdo!"
   },
   "dhikr": {
     "tasbih_title": "Tasbiixda Dijitaalka ah",
@@ -210,5 +216,30 @@
     "shared_streaks": "Xiriirka Wadaagga ah",
     "leaderboard": "Dhibcaha Sare",
     "challenges": "Tartamada Caalamiga ah"
+  },
+  "enhancements": {
+    "qibla_tracker": "Helaha Qiblada & Waqtiyada Salaada",
+    "detect_location": "Ogow Goobtaada",
+    "manual_coords": "Isticmaal Isuduwaha Gacanta",
+    "direction_to_makkah": "Jihada Makkah",
+    "degrees": "shahaadooyin",
+    "aligned": "La toosiyey! Wajihi Makkah",
+    "align_device": "Wareeji jiheeyaha si aad u toosiso Makkah",
+    "dua_library": "Ducuuyinka & Aadaabta",
+    "read_times": "Akhri {{count}} jeer",
+    "study_notes": "Milicsiga Qur'aanka & Buugga Daraasaadka",
+    "add_reflection": "Qor Fikraddaada",
+    "reflection_placeholder": "Ku qor fikradaada ama daraasaddaada tafsiirka halkan...",
+    "save_note": "Kaydi Fikradda",
+    "logged_reflections": "Diiwaanka Fikradayda",
+    "hijri_planner": "Qorsheeyaha Soonka Hijriga",
+    "white_days": "Maalmaha Cadcad (Ayyam al-Bidh)",
+    "sunnah_fasting": "Soonka Sunnaha",
+    "moon_phase": "Wejiga Dayaxa ee Hada",
+    "charity_budgeter": "Sadaqada & Waqf-ka",
+    "charity_spent_month": "Sadaqada la bixiyey Bishan",
+    "donation_target": "Yoolka Sadaqada ee Bisha",
+    "waqf_planner": "Xarunta Qorshaynta Waqf-ka",
+    "log_donation": "Diiwaangeli Sadaqada"
   }
 }

@@ -3,10 +3,11 @@ import { useDeenStore } from '../store/deenStore';
 import { BookOpen, Sparkles, PlusCircle, Trophy, BookMarked, Trash2, Edit2, Check, X, Search, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { quranSurahs } from '../lib/quranData';
+import confetti from 'canvas-confetti';
 
 export const QuranTracker: React.FC = () => {
   const { t } = useTranslation();
-  const { quranProgress, updateQuranProgress, quranLogs, editQuranLog, deleteQuranLog } = useDeenStore();
+  const { quranProgress, updateQuranProgress, quranLogs, editQuranLog, deleteQuranLog, quranNotes, addQuranNote, editQuranNote, deleteQuranNote } = useDeenStore();
 
   const [logMode, setLogMode] = useState<'pages' | 'ayahs'>('pages');
   const [pagesLog, setPagesLog] = useState<number>(1);
@@ -25,6 +26,33 @@ export const QuranTracker: React.FC = () => {
   const [editAyah, setEditAyah] = useState<number>(1);
   const [editMode, setEditMode] = useState<'pages' | 'ayahs'>('pages');
   const [editDate, setEditDate] = useState<string>('');
+
+  // Reflections/Notes states
+  const [noteText, setNoteText] = useState<string>('');
+  const [noteSurah, setNoteSurah] = useState<number>(quranProgress.lastSurah);
+  const [noteAyah, setNoteAyah] = useState<number>(quranProgress.lastAyah);
+  
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteText, setEditNoteText] = useState<string>('');
+
+  const handleSaveNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!noteText.trim()) return;
+    addQuranNote(noteSurah, noteAyah, noteText);
+    setNoteText('');
+    confetti({ particleCount: 30, spread: 30 });
+  };
+
+  const handleStartEditNote = (noteObj: any) => {
+    setEditingNoteId(noteObj.id);
+    setEditNoteText(noteObj.note);
+  };
+
+  const handleSaveEditNote = (id: string) => {
+    if (!editNoteText.trim()) return;
+    editQuranNote(id, editNoteText);
+    setEditingNoteId(null);
+  };
 
   const handleStartEdit = (log: any) => {
     setEditingLogId(log.id);
@@ -385,7 +413,12 @@ export const QuranTracker: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <BookMarked className="text-primary" size={20} />
-            <h2 className="text-base font-bold text-text-primary">Quran progress logs</h2>
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+              {t('quran.history_title')}
+              <span className="bg-primary/10 border border-primary/20 text-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
+                {quranLogs.length}
+              </span>
+            </h2>
           </div>
         </div>
 
@@ -394,11 +427,11 @@ export const QuranTracker: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border-color/60 text-[10px] text-text-muted uppercase font-bold">
-                  <th className="py-2.5 px-3">Date</th>
-                  <th className="py-2.5 px-3">Surah</th>
-                  <th className="py-2.5 px-3">Last Ayah</th>
-                  <th className="py-2.5 px-3">Progress</th>
-                  <th className="py-2.5 px-3 text-right">Actions</th>
+                  <th className="py-2.5 px-3">{t('quran.date')}</th>
+                  <th className="py-2.5 px-3">{t('quran.surah')}</th>
+                  <th className="py-2.5 px-3">{t('quran.last_ayah')}</th>
+                  <th className="py-2.5 px-3">{t('quran.progress')}</th>
+                  <th className="py-2.5 px-3 text-right">{t('quran.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-color/40 text-xs">
@@ -447,7 +480,7 @@ export const QuranTracker: React.FC = () => {
                             className="bg-bg-primary border border-border-color rounded px-2 py-1 text-xs text-text-primary w-16 text-center focus:outline-none focus:border-primary"
                           />
                         ) : (
-                          <span className="text-text-secondary">Ayah {log.ayah}</span>
+                          <span className="text-text-secondary font-medium">Ayah {log.ayah}</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">
@@ -519,8 +552,157 @@ export const QuranTracker: React.FC = () => {
             </table>
           </div>
         ) : (
-          <p className="text-xs text-text-muted text-center py-6">No progress logs found. Log your progress above to begin!</p>
+          <p className="text-xs text-text-muted text-center py-6">{t('quran.no_logs')}</p>
         )}
+      </div>
+
+      {/* Quranic Reflections & Study Notes Section */}
+      <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 space-y-6">
+        <div className="flex items-center gap-2 border-b border-border-color/65 pb-3">
+          <BookOpen className="text-primary" size={20} />
+          <div>
+            <h2 className="text-base font-bold text-text-primary">{t('enhancements.study_notes')}</h2>
+            <p className="text-xs text-text-secondary mt-0.5">{t('enhancements.note_xp')}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Write Note Form */}
+          <div className="p-5 rounded-2xl border border-border-color bg-bg-secondary/60 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('enhancements.add_reflection')}</h3>
+            
+            <form onSubmit={handleSaveNote} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-1">Surah</label>
+                  <select
+                    value={noteSurah}
+                    onChange={(e) => {
+                      setNoteSurah(parseInt(e.target.value) || 1);
+                      setNoteAyah(1);
+                    }}
+                    className="w-full bg-bg-primary border border-border-color rounded-xl px-2.5 py-2 text-xs text-text-primary focus:outline-none focus:border-primary"
+                  >
+                    {quranSurahs.map(s => (
+                      <option key={s.num} value={s.num}>
+                        {s.num}. {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-1">Ayah</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={quranSurahs.find(s => s.num === noteSurah)?.verses || 286}
+                    value={noteAyah}
+                    onChange={(e) => {
+                      const maxVerses = quranSurahs.find(s => s.num === noteSurah)?.verses || 286;
+                      setNoteAyah(Math.max(1, Math.min(maxVerses, parseInt(e.target.value) || 1)));
+                    }}
+                    className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-center font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-1">Reflection Text</label>
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder={t('enhancements.reflection_placeholder')}
+                  rows={4}
+                  className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary resize-none"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition shadow cursor-pointer"
+              >
+                {t('enhancements.save_note')}
+              </button>
+            </form>
+          </div>
+
+          {/* Saved Notes List */}
+          <div className="lg:col-span-2 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('enhancements.logged_reflections')}</h3>
+            
+            <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1">
+              {quranNotes && quranNotes.length > 0 ? (
+                [...quranNotes].reverse().map((nObj) => {
+                  const surahName = quranSurahs.find(s => s.num === nObj.surah)?.name || `Surah ${nObj.surah}`;
+                  const isEditingNote = editingNoteId === nObj.id;
+
+                  return (
+                    <div key={nObj.id} className="p-4 rounded-2xl border border-border-color bg-bg-secondary flex flex-col justify-between space-y-3 shadow-sm hover:border-primary/20 transition">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-extrabold text-text-primary">
+                          Surah {nObj.surah}. {surahName}, Ayah {nObj.ayah}
+                        </span>
+                        <span className="text-[10px] text-text-muted">{nObj.date}</span>
+                      </div>
+
+                      {isEditingNote ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editNoteText}
+                            onChange={(e) => setEditNoteText(e.target.value)}
+                            rows={3}
+                            className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary resize-none"
+                          />
+                          <div className="flex justify-end gap-1.5">
+                            <button
+                              onClick={() => handleSaveEditNote(nObj.id)}
+                              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold cursor-pointer transition"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingNoteId(null)}
+                              className="px-2.5 py-1.5 border border-border-color rounded-lg text-[10px] font-bold text-text-secondary hover:bg-bg-tertiary cursor-pointer transition"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-text-secondary leading-relaxed select-text font-medium bg-bg-primary/20 p-3 rounded-xl border border-border-color/40">
+                          {nObj.note}
+                        </p>
+                      )}
+
+                      {!isEditingNote && (
+                        <div className="flex justify-end gap-2 border-t border-border-color/30 pt-2">
+                          <button
+                            onClick={() => handleStartEditNote(nObj)}
+                            className="p-1 text-[10px] font-bold text-text-muted hover:text-primary transition cursor-pointer flex items-center gap-1"
+                          >
+                            <Edit2 size={12} /> Edit
+                          </button>
+                          <button
+                            onClick={() => deleteQuranNote(nObj.id)}
+                            className="p-1 text-[10px] font-bold text-text-muted hover:text-danger transition cursor-pointer flex items-center gap-1"
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-8 text-center border border-dashed border-border-color rounded-2xl">
+                  <span className="text-xs text-text-muted font-bold block">No reflection notes recorded yet</span>
+                  <span className="text-[10px] text-text-muted block mt-1">Select a verse and jot down your spiritual thoughts above.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -17,6 +17,14 @@ export interface QuranLog {
   mode: 'pages' | 'ayahs';
 }
 
+export interface QuranNote {
+  id: string;
+  surah: number;
+  ayah: number;
+  note: string;
+  date: string;
+}
+
 export interface QuranProgress {
   pagesRead: number;
   lastSurah: number;
@@ -71,6 +79,10 @@ interface DeenState {
   getDeenScore: () => number;
   unlockAchievement: (id: string) => void;
   resetAll: () => void;
+  quranNotes: QuranNote[];
+  addQuranNote: (surah: number, ayah: number, note: string) => void;
+  editQuranNote: (id: string, note: string) => void;
+  deleteQuranNote: (id: string) => void;
 }
 
 const defaultAchievements: Achievement[] = [
@@ -111,6 +123,7 @@ const INITIAL_STATE = getStoredDeenState() || {
     completedJuz: []
   },
   quranLogs: [],
+  quranNotes: [],
   dhikrLogs: [],
   nawafilLogs: [],
   xp: 0,
@@ -123,7 +136,7 @@ const INITIAL_STATE = getStoredDeenState() || {
 export const useDeenStore = create<DeenState>((set, get) => {
   const saveState = (newState: Partial<DeenState>) => {
     const currentState = { ...get(), ...newState };
-    const { logPrayer, logNawafil, updateQuranProgress, editQuranLog, deleteQuranLog, logDhikr, addXp, getDeenScore, unlockAchievement, resetAll, setUserId, syncSpiritualData, syncOfflineData, ...dataToSave } = currentState;
+    const { logPrayer, logNawafil, updateQuranProgress, editQuranLog, deleteQuranLog, logDhikr, addXp, getDeenScore, unlockAchievement, resetAll, setUserId, syncSpiritualData, syncOfflineData, addQuranNote, editQuranNote, deleteQuranNote, ...dataToSave } = currentState;
     localStorage.setItem('deenos_spiritual_state', JSON.stringify(dataToSave));
   };
 
@@ -131,6 +144,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
     ...INITIAL_STATE,
     nawafilLogs: INITIAL_STATE.nawafilLogs || [],
     quranLogs: INITIAL_STATE.quranLogs || [],
+    quranNotes: INITIAL_STATE.quranNotes || [],
 
     setUserId: (id: string) => {
       set({ userId: id });
@@ -535,6 +549,34 @@ export const useDeenStore = create<DeenState>((set, get) => {
       return Math.min(100, salahScore + dhikrScore + hasReadQuranToday);
     },
 
+    addQuranNote: (surah: number, ayah: number, note: string) => {
+      const newNote: QuranNote = {
+        id: crypto.randomUUID(),
+        surah,
+        ayah,
+        note,
+        date: new Date().toISOString().split('T')[0]
+      };
+      const updatedNotes = [...(get().quranNotes || []), newNote];
+      set({ quranNotes: updatedNotes });
+      saveState({ quranNotes: updatedNotes });
+      get().addXp(10); // Reward 10 XP for reflecting
+    },
+
+    editQuranNote: (id: string, note: string) => {
+      const notes = get().quranNotes || [];
+      const updatedNotes = notes.map(n => n.id === id ? { ...n, note } : n);
+      set({ quranNotes: updatedNotes });
+      saveState({ quranNotes: updatedNotes });
+    },
+
+    deleteQuranNote: (id: string) => {
+      const notes = get().quranNotes || [];
+      const updatedNotes = notes.filter(n => n.id !== id);
+      set({ quranNotes: updatedNotes });
+      saveState({ quranNotes: updatedNotes });
+    },
+
     resetAll: () => {
       set({
         prayerLogs: [],
@@ -546,6 +588,7 @@ export const useDeenStore = create<DeenState>((set, get) => {
           completedJuz: []
         },
         quranLogs: [],
+        quranNotes: [],
         dhikrLogs: [],
         nawafilLogs: [],
         xp: 0,

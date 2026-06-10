@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFinanceStore } from '../store/financeStore';
 import type { Subscription, Expense } from '../store/financeStore';
 import { ZakatCalculator } from '../components/ZakatCalculator';
@@ -8,12 +9,13 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recha
 import confetti from 'canvas-confetti';
 
 export const FinanceHub: React.FC = () => {
+  const { t } = useTranslation();
   const { 
     subscriptions, expenses, addSubscription, deleteSubscription, 
     toggleSubscriptionStatus, addExpense, deleteExpense 
   } = useFinanceStore();
 
-  const [activeTab, setActiveTab] = useState<'subs' | 'expenses' | 'zakat'>('subs');
+  const [activeTab, setActiveTab] = useState<'subs' | 'expenses' | 'zakat' | 'charity'>('subs');
 
   // Halal Purifier States
   const [purifyPortfolioVal, setPurifyPortfolioVal] = useState(0);
@@ -130,7 +132,7 @@ export const FinanceHub: React.FC = () => {
     <div className="space-y-6">
       {/* Top Navigation Headers */}
       <div className="flex border-b border-border-color gap-4">
-        {(['subs', 'expenses', 'zakat'] as const).map(tab => (
+        {(['subs', 'expenses', 'zakat', 'charity'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -140,7 +142,7 @@ export const FinanceHub: React.FC = () => {
                 : 'border-transparent text-text-secondary hover:text-text-primary'
             }`}
           >
-            {tab === 'subs' ? 'SaaS Subscriptions' : tab === 'expenses' ? 'Expense Tracking' : 'Zakat Calculator'}
+            {tab === 'subs' ? 'SaaS Subscriptions' : tab === 'expenses' ? 'Expense Tracking' : tab === 'zakat' ? 'Zakat Calculator' : t('enhancements.charity_budgeter')}
           </button>
         ))}
       </div>
@@ -568,6 +570,135 @@ export const FinanceHub: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          4. CHARITY (SADAQAH & WAQF) TAB
+          ======================================================== */}
+      {activeTab === 'charity' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-in fade-in duration-200">
+          
+          {/* Left Column: Charity Tracker and Logger */}
+          <div className="lg:col-span-2 glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 space-y-5">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                  <HeartHandshake className="text-primary" size={20} />
+                  Sadaqah & Waqf Charity Budgeter
+                </h2>
+                <p className="text-xs text-text-secondary mt-0.5">Track voluntary donations, Waqf contributions, and log charity payments</p>
+              </div>
+            </div>
+
+            {/* Quick stats grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-1">
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-wider block">{t('enhancements.charity_spent_month')}</span>
+                <span className="text-xl font-black text-primary">
+                  ${expenses
+                    .filter(e => e.category === 'charity' && new Date(e.date).getMonth() === new Date().getMonth())
+                    .reduce((acc, e) => acc + e.amount, 0)
+                    .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className="text-[9px] text-text-muted block font-medium">Parsed from expenses under category 'charity'</span>
+              </div>
+
+              <div className="p-4 rounded-xl border border-border-color bg-bg-primary/20 space-y-1.5">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">{t('enhancements.donation_target')}</span>
+                  <span className="text-[10px] font-bold text-primary">
+                    {Math.min(100, Math.round((expenses.filter(e => e.category === 'charity').reduce((acc, e) => acc + e.amount, 0) / 200) * 100))}%
+                  </span>
+                </div>
+                <span className="text-xl font-black text-text-primary block">
+                  ${expenses.filter(e => e.category === 'charity').reduce((acc, e) => acc + e.amount, 0).toFixed(2)} 
+                  <span className="text-xs font-semibold text-text-muted"> / $200.00</span>
+                </span>
+                <div className="w-full h-1.5 bg-border-color rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary rounded-full transition-all" 
+                    style={{ width: `${Math.min(100, (expenses.filter(e => e.category === 'charity').reduce((acc, e) => acc + e.amount, 0) / 200) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Log Sadaqah Form */}
+            <div className="p-4 rounded-xl border border-border-color bg-bg-primary/20 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('enhancements.log_donation')}</h3>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const amountInput = form.elements.namedItem('amount') as HTMLInputElement;
+                const descInput = form.elements.namedItem('description') as HTMLInputElement;
+                const amount = parseFloat(amountInput.value);
+                const desc = descInput.value;
+                if (!isNaN(amount) && amount > 0) {
+                  addExpense(amount, 'charity', desc || 'Sadaqah Donation', new Date().toISOString().split('T')[0]);
+                  amountInput.value = '';
+                  descInput.value = '';
+                  confetti({ particleCount: 50, spread: 40 });
+                }
+              }} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div>
+                  <label className="text-[9px] font-black text-text-secondary block mb-1">Amount ($ USD)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="amount"
+                    placeholder="25.00"
+                    className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary font-bold"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2 flex gap-3">
+                  <div className="flex-1">
+                    <label className="text-[9px] font-black text-text-secondary block mb-1">Purpose / Organization</label>
+                    <input
+                      type="text"
+                      name="description"
+                      placeholder="e.g. Mosque building fund, food relief"
+                      className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary focus:outline-none focus:border-primary text-text-primary"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition shadow cursor-pointer h-[34px] self-end"
+                  >
+                    Log Sadaqah
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* Right Column: Waqf Planner */}
+          <div className="glass-card border border-border-color rounded-2xl p-6 bg-bg-secondary/40 space-y-4">
+            <h3 className="text-base font-bold text-text-primary flex items-center gap-1.5 border-b border-border-color/60 pb-3">
+              <Sparkles className="text-amber-500 animate-pulse" size={18} />
+              {t('enhancements.waqf_planner')}
+            </h3>
+            
+            <p className="text-xs text-text-secondary leading-relaxed font-medium">
+              Waqf is a continuous, perpetual charity (Sadaqah Jariyah) that continues to reward you even after death. Design recurring endowment portfolios or set up monthly auto-charity targets.
+            </p>
+
+            <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-3.5">
+              <span className="text-xs font-bold text-amber-500 block flex items-center gap-1.5">
+                💡 Waqf Ideas & Categories
+              </span>
+              <ul className="text-[11px] leading-relaxed text-text-secondary space-y-2 list-disc pl-3 font-semibold">
+                <li><strong>Water Waqf</strong>: Contributing to building permanent water wells.</li>
+                <li><strong>Knowledge Waqf</strong>: Funding books, Islamic education libraries, or student scholarships.</li>
+                <li><strong>Property Waqf</strong>: Donating land or building space to a mosque or welfare center.</li>
+              </ul>
+            </div>
+
+            <div className="p-4 rounded-xl border border-border-color bg-bg-primary/20 text-[10px] text-text-muted leading-relaxed font-medium">
+              * Note: Spendings categorized under 'charity' in the Expense Tracker are parsed automatically into this budget view.
+            </div>
           </div>
         </div>
       )}

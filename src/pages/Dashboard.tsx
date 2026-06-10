@@ -7,10 +7,11 @@ import { useFinanceStore } from '../store/financeStore';
 import { DeenOrb } from '../components/DeenOrb';
 import { TodayTimeline } from '../components/TodayTimeline';
 import { geminiService } from '../services/gemini';
+import { quranSurahs } from '../lib/quranData';
 import { 
   Sparkles, ArrowRight, BookOpen, Award, X, 
   Droplet, Flame, TrendingUp, PlusCircle, Compass, Wallet, PenTool, Plus, 
-  Activity, Check
+  Activity, Check, ArrowUpRight
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,43 +29,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
   
   // Stores
   const { 
-    level, xp, getDeenScore, prayerLogs, logPrayer, quranLogs, dhikrLogs, 
-    achievements, addXp, quranProgress, updateQuranProgress, logDhikr 
+    level, xp, getDeenScore, prayerLogs, quranLogs, dhikrLogs, 
+    achievements, quranProgress 
   } = useDeenStore();
-  const { habits, getPlantLevel, getPlantStatus, logHabit } = useHabitStore();
+  const { habits, getPlantLevel, getPlantStatus } = useHabitStore();
   const { userProfile } = useUIStore();
-  const { addExpense } = useFinanceStore();
+  const { expenses, zakatHistory } = useFinanceStore();
 
   // Component States
   const [aiGuidance, setAiGuidance] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(false);
-  
-  // Modals & Popups
-  const [activeModal, setActiveModal] = useState<'dhikr' | 'quran' | 'expense' | 'journal' | null>(null);
   const [showOrbDetails, setShowOrbDetails] = useState(false);
-  const [activeSalahPop, setActiveSalahPop] = useState<string | null>(null);
-
-  // Quick Action form states
-  // 1. Tasbih counter
-  const [tasbihPhrase, setTasbihPhrase] = useState('Subhan Allah');
-  const [tasbihCount, setTasbihCount] = useState(0);
-  const tasbihTarget = 33;
-  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
-
-  // 2. Quran logger
-  const [quranPages, setQuranPages] = useState<number>(2);
-  const [quranSurah, setQuranSurah] = useState<number>(quranProgress.lastSurah || 1);
-  const [quranAyah, setQuranAyah] = useState<number>(quranProgress.lastAyah || 1);
-
-  // 3. Expense logger
-  const [expenseAmount, setExpenseAmount] = useState<string>('');
-  const [expenseCategory, setExpenseCategory] = useState<'food' | 'family' | 'education' | 'business' | 'charity' | 'entertainment' | 'bills' | 'custom'>('charity');
-  const [expenseDesc, setExpenseDesc] = useState<string>('');
-
-  // 4. Journal logger
-  const [journalPrompt, setJournalPrompt] = useState<'gratitude' | 'challenges' | 'intentions'>('gratitude');
-  const [journalText, setJournalText] = useState<string>('');
-  const [journalMood, setJournalMood] = useState<string>('Blessed');
 
   const deenScore = getDeenScore();
   const today = new Date().toISOString().split('T')[0];
@@ -89,7 +64,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
         .map(l => l.prayer_name);
       
       try {
-        const text = await geminiService.getDailyGuidance(deenScore, completedToday, habits.filter(h => h.lastCompletedDate === today).length);
+        const text = await geminiService.getDailyGuidance(
+          deenScore, 
+          completedToday, 
+          habits.filter(h => h.lastCompletedDate === today).length
+        );
         setAiGuidance(text);
       } catch (e) {
         console.error(e);
@@ -139,132 +118,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
 
   const chartData = getWeeklyData();
 
-  // Handlers for Quick Action Submits
-  const handleQuickSalahLog = (prayerKey: string, status: string) => {
-    logPrayer(prayerKey, status, today);
-    setActiveSalahPop(null);
-    if (status !== 'missed') {
-      confetti({
-        particleCount: 50,
-        spread: 40,
-        origin: { y: 0.8 },
-        colors: ['#10b981', '#34d399', '#fbbf24']
-      });
-    }
-  };
-
-  const handleWaterHabit = (habitId: string) => {
-    logHabit(habitId, 'completed', today);
-    confetti({
-      particleCount: 40,
-      spread: 30,
-      origin: { y: 0.85 },
-      colors: ['#3b82f6', '#60a5fa', '#10b981']
-    });
-  };
-
-  // Digital Tasbih click
-  const handleTasbihTap = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setRipples(prev => [...prev, { id: Date.now(), x, y }]);
-    setTasbihCount(prev => {
-      const next = prev + 1;
-      if (next === tasbihTarget) {
-        confetti({
-          particleCount: 60,
-          spread: 50,
-          colors: ['#ca8a04', '#fbbf24', '#34d399']
-        });
-      }
-      return next;
-    });
-
-    // Audio/Vibe feedback simulation
-    if (navigator.vibrate) {
-      navigator.vibrate(25);
-    }
-  };
-
-  const saveTasbihSession = () => {
-    if (tasbihCount > 0) {
-      logDhikr(tasbihPhrase, tasbihCount, today);
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.7 }
-      });
-    }
-    setTasbihCount(0);
-    setActiveModal(null);
-  };
-
-  const saveQuranProgress = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (quranPages > 0) {
-      updateQuranProgress(quranPages, quranSurah, quranAyah, 'pages');
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.7 }
-      });
-      setActiveModal(null);
-    }
-  };
-
-  const saveExpense = (e: React.FormEvent) => {
-    e.preventDefault();
-    const amount = parseFloat(expenseAmount);
-    if (!isNaN(amount) && amount > 0) {
-      addExpense(amount, expenseCategory, expenseDesc || `${expenseCategory} expense`, today);
-      confetti({
-        particleCount: 60,
-        spread: 40,
-        origin: { y: 0.7 }
-      });
-      setExpenseAmount('');
-      setExpenseDesc('');
-      setActiveModal(null);
-    }
-  };
-
-  const saveJournalEntry = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!journalText.trim()) return;
-
-    try {
-      const promptText = journalPrompt === 'gratitude' ? t('journal.prompt_1') : 
-                          journalPrompt === 'challenges' ? t('journal.prompt_2') : t('journal.prompt_3');
-      
-      const summaryText = await geminiService.analyzeJournalEntry(journalText, journalMood);
-
-      const savedLogs = localStorage.getItem('deenos_journal_logs');
-      const logs = savedLogs ? JSON.parse(savedLogs) : [];
-      const newLog = {
-        date: today,
-        mood: journalMood,
-        prompt: promptText,
-        text: journalText,
-        aiSummary: summaryText
-      };
-      localStorage.setItem('deenos_journal_logs', JSON.stringify([newLog, ...logs]));
-      
-      addXp(30);
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.7 }
-      });
-      setJournalText('');
-      setActiveModal(null);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Rendering isometric plant visualizers
+  // Botanical Plant Renderer
   const renderMiniPlant = (habit: Habit) => {
     const level = getPlantLevel(habit);
     const status = getPlantStatus(habit);
@@ -355,14 +209,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
   };
 
   const getPrayerColor = (status: string | null) => {
-    if (!status) return 'bg-bg-tertiary border-border-color text-text-muted hover:border-primary/50';
+    if (!status) return 'bg-bg-tertiary/40 border-border-color/60 text-text-muted';
     switch (status) {
-      case 'jamaah_mosque': return 'bg-emerald-500/20 border-emerald-500/50 text-emerald-450';
-      case 'individual_mosque': return 'bg-teal-500/20 border-teal-500/50 text-teal-450';
-      case 'completed': return 'bg-blue-500/20 border-blue-500/50 text-blue-400';
-      case 'delayed': return 'bg-amber-500/20 border-amber-500/50 text-amber-500';
-      case 'missed': return 'bg-red-500/20 border-red-500/50 text-red-500';
-      default: return 'bg-bg-tertiary border-border-color text-text-secondary';
+      case 'jamaah_mosque': return 'bg-emerald-500/20 border-emerald-500/40 text-emerald-450';
+      case 'individual_mosque': return 'bg-teal-500/20 border-teal-500/40 text-teal-450';
+      case 'completed': return 'bg-blue-500/20 border-blue-500/40 text-blue-400';
+      case 'delayed': return 'bg-amber-500/20 border-amber-500/40 text-amber-500';
+      case 'missed': return 'bg-red-500/20 border-red-500/40 text-red-500';
+      default: return 'bg-bg-tertiary/40 border-border-color/60 text-text-secondary';
     }
   };
 
@@ -377,6 +231,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
       default: return 'Logged';
     }
   };
+
+  const getPrayerIcon = (status: string | null) => {
+    if (!status) return '⚪';
+    switch (status) {
+      case 'jamaah_mosque': return '🕌';
+      case 'individual_mosque': return '👥';
+      case 'completed': return '🏠';
+      case 'delayed': return '⏳';
+      case 'missed': return '❌';
+      default: return '✓';
+    }
+  };
+
+  // Activity Deck Stats Calculations
+  // 1. Quran Read count
+  const quranReadToday = quranLogs
+    .filter(log => log.date === today)
+    .reduce((acc, log) => {
+      return acc + (log.mode === 'pages' ? log.amount : Math.max(1, Math.round(log.amount / 15)));
+    }, 0);
+  const lastSurahName = quranSurahs.find(s => s.num === quranProgress.lastSurah)?.name || `Surah ${quranProgress.lastSurah}`;
+
+  // 2. Dhikr logs count
+  const dhikrRecitedToday = dhikrLogs
+    .filter(log => log.date === today)
+    .reduce((acc, log) => acc + log.count, 0);
+  const lastDhikrLog = dhikrLogs.length > 0 ? dhikrLogs[dhikrLogs.length - 1] : null;
+
+  // 3. Charity spent
+  const getCharityAmountThisMonth = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
+    return expenses
+      .filter(exp => {
+        if (exp.category !== 'charity') return false;
+        const expDate = new Date(exp.date);
+        return expDate.getFullYear() === currentYear && expDate.getMonth() === currentMonth;
+      })
+      .reduce((acc, exp) => acc + exp.amount, 0);
+  };
+  const charityMonthTotal = getCharityAmountThisMonth();
+
+  // 4. Last journal entry
+  const getLastJournalEntry = () => {
+    try {
+      const saved = localStorage.getItem('deenos_journal_logs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed[0];
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  };
+  const lastJournalEntry = getLastJournalEntry();
 
   return (
     <div className="space-y-6 select-none pb-12">
@@ -395,11 +309,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
               Assalamu Alaikum, <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{userProfile.fullName}</span>!
             </h2>
             <p className="text-xs text-text-secondary mt-1.5 max-w-xl leading-relaxed">
-              Your daily operating dashboard is reactive. Track Salah congregation values, update your botanical spiritual garden, click the DeenOrb to break down scores, and use inline modals to avoid screen switching.
+              Your daily operating dashboard. View spiritual stats, monitor your botanical habit garden, and track prayer logs in real-time. Use the Activity Deck below to jump to dedicated workspace tabs.
             </p>
           </div>
 
-          {/* Interactive Streak Badge */}
+          {/* Consistency Streak Badge */}
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -421,7 +335,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
       {/* 2. CORE DASHBOARD GRID */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         
-        {/* ================= COLUMN 1: INTERACTIVE DEENORB & MINI-GARDEN ================= */}
+        {/* ================= COLUMN 1: INTERACTIVE DEENORB & GARDEN SUMMARY ================= */}
         <div className="space-y-6">
           {/* A. Clickable DeenOrb Card */}
           <motion.div 
@@ -446,18 +360,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
             </p>
           </motion.div>
 
-          {/* B. Interactive Mini-Garden Card */}
+          {/* B. Spiritual Garden Summary Card */}
           <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40 flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-sm font-black text-text-primary tracking-tight">Interactive Garden</h3>
-                <p className="text-[10px] text-text-secondary mt-0.5">Water active habits directly</p>
+                <p className="text-[10px] text-text-secondary mt-0.5">Watch your habits blossom</p>
               </div>
               <button 
                 onClick={() => setActiveTab('habits')}
-                className="p-1 rounded bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition cursor-pointer"
+                className="p-1 px-2.5 rounded bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition cursor-pointer flex items-center gap-1"
               >
-                Go to Garden
+                Go to Garden <ArrowUpRight size={10} />
               </button>
             </div>
 
@@ -500,25 +414,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => handleWaterHabit(habit.id)}
-                        disabled={isWatered}
-                        className={`mt-2 flex items-center justify-center gap-1 w-full py-1 rounded-lg text-[9px] font-bold border transition ${
-                          isWatered 
-                            ? 'bg-success/15 border-success/30 text-success' 
-                            : 'bg-primary text-white border-primary hover:bg-primary-hover hover:scale-102 cursor-pointer'
-                        }`}
-                      >
+                      <div className={`mt-2 flex items-center justify-center gap-1 w-full py-1 rounded-lg text-[9px] font-bold border transition ${
+                        isWatered 
+                          ? 'bg-success/15 border-success/30 text-success' 
+                          : 'bg-primary/5 border-primary/20 text-primary animate-pulse-slow'
+                      }`}>
                         {isWatered ? (
                           <>
                             <Check size={10} /> Watered
                           </>
                         ) : (
                           <>
-                            <Droplet size={10} /> Water
+                            <Droplet size={10} /> Needs Water
                           </>
                         )}
-                      </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -545,18 +455,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
                     <span className="text-[10px] text-text-muted">{t('dashboard.generating_reflections')}</span>
                   </div>
                 ) : (
-                  aiGuidance.split('\n').map((line, idx) => {
-                    if (line.startsWith('### ')) {
-                      return <h4 key={idx} className="font-extrabold text-xs text-primary uppercase tracking-widest mt-3 mb-1">{line.substring(4)}</h4>;
-                    }
-                    if (line.startsWith('* ') || line.startsWith('- ')) {
-                      return <li key={idx} className="ml-3 list-disc my-0.5 text-text-secondary font-medium">{line.substring(2)}</li>;
-                    }
-                    if (line.startsWith('> ')) {
-                      return <blockquote key={idx} className="border-l-2 border-primary pl-2.5 italic my-2 text-text-muted bg-primary/5 py-1 rounded-r">{line.substring(2)}</blockquote>;
-                    }
-                    return <p key={idx} className="font-medium">{line}</p>;
-                  })
+                  aiGuidance ? (
+                    aiGuidance.split('\n').map((line, idx) => {
+                      if (line.startsWith('### ')) {
+                        return <h4 key={idx} className="font-extrabold text-xs text-primary uppercase tracking-widest mt-3 mb-1">{line.substring(4)}</h4>;
+                      }
+                      if (line.startsWith('* ') || line.startsWith('- ')) {
+                        return <li key={idx} className="ml-3 list-disc my-0.5 text-text-secondary font-medium">{line.substring(2)}</li>;
+                      }
+                      if (line.startsWith('> ')) {
+                        return <blockquote key={idx} className="border-l-2 border-primary pl-2.5 italic my-2 text-text-muted bg-primary/5 py-1 rounded-r">{line.substring(2)}</blockquote>;
+                      }
+                      return <p key={idx} className="font-medium">{line}</p>;
+                    })
+                  ) : (
+                    <p className="italic text-text-muted text-center py-6">Reflections will show when activities are logged.</p>
+                  )
                 )}
               </div>
             </div>
@@ -637,165 +551,157 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
         </div>
       </div>
 
-      {/* 3. LOWER DASHBOARD GRID: SALAH LOGGER, QUICK ACTIONS & TODAY TIMELINE */}
+      {/* 3. LOWER DASHBOARD GRID: SALAH TRACKER checklist, ACTIVITY DECK & TIMELINE */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         
-        {/* A. INTERACTIVE SALAH LOGGER WIDGET */}
+        {/* A. SALAH TRACKER CHECKLIST WIDGET */}
         <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-5">
             <div>
               <h3 className="text-sm font-black text-text-primary tracking-tight">Salah Tracker</h3>
-              <p className="text-[10px] text-text-secondary mt-0.5">Click any prayer to select details</p>
+              <p className="text-[10px] text-text-secondary mt-0.5">Today's completed prayers</p>
             </div>
             <button 
               onClick={() => setActiveTab('salah')}
-              className="p-1 rounded bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition cursor-pointer"
+              className="p-1 px-2.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition cursor-pointer flex items-center gap-1"
             >
-              Configure Logs
+              Open Tracker <ArrowUpRight size={10} />
             </button>
           </div>
 
-          <div className="space-y-2.5 relative">
+          <div className="space-y-3">
             {obligatoryPrayers.map((p) => {
               const status = getPrayerStatus(p.key);
+              const isLogged = !!status;
               
               return (
-                <div key={p.key} className="relative">
-                  <div className="flex items-center justify-between p-3 rounded-2xl border border-border-color/80 bg-bg-secondary/40 hover:bg-bg-secondary/80 transition shadow-sm">
+                <div 
+                  key={p.key} 
+                  className={`flex items-center justify-between p-3 rounded-2xl border transition duration-200 ${
+                    isLogged 
+                      ? 'border-primary/20 bg-primary/[0.02]' 
+                      : 'border-border-color bg-bg-secondary/20 opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-base select-none">{getPrayerIcon(status)}</span>
                     <span className="text-xs font-bold text-text-primary">{p.label}</span>
-                    
-                    <button
-                      onClick={() => setActiveSalahPop(activeSalahPop === p.key ? null : p.key)}
-                      className={`px-3 py-1.5 rounded-xl border text-[10px] font-extrabold cursor-pointer transition-all ${getPrayerColor(status)}`}
-                    >
-                      {getPrayerLabel(status)}
-                    </button>
                   </div>
-
-                  {/* Popover Inline Select Sub-Menu */}
-                  <AnimatePresence>
-                    {activeSalahPop === p.key && (
-                      <>
-                        <div 
-                          className="fixed inset-0 z-40" 
-                          onClick={() => setActiveSalahPop(null)} 
-                        />
-                        <motion.div 
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="absolute right-0 top-full mt-1.5 bg-bg-secondary border border-border-color p-2 rounded-2xl shadow-xl z-50 flex flex-col gap-1 w-48 text-left"
-                        >
-                          <span className="text-[8px] font-extrabold text-text-muted uppercase px-2 py-0.5 block tracking-widest border-b border-border-color/60 pb-1.5 mb-1">
-                            Prayer Status & XP Value
-                          </span>
-                          <button 
-                            onClick={() => handleQuickSalahLog(p.key, 'jamaah_mosque')}
-                            className="text-left text-[10px] font-bold px-2.5 py-1.5 hover:bg-emerald-500/10 rounded-xl hover:text-emerald-500 transition flex items-center justify-between"
-                          >
-                            <span>🕌 Mosque (Jama'ah)</span>
-                            <span className="text-[8px] bg-emerald-500/20 px-1 py-0.5 rounded text-emerald-500 font-extrabold">+25 XP</span>
-                          </button>
-                          <button 
-                            onClick={() => handleQuickSalahLog(p.key, 'individual_mosque')}
-                            className="text-left text-[10px] font-bold px-2.5 py-1.5 hover:bg-teal-500/10 rounded-xl hover:text-teal-555 transition flex items-center justify-between"
-                          >
-                            <span>👥 Mosque (Individual)</span>
-                            <span className="text-[8px] bg-teal-500/20 px-1 py-0.5 rounded text-teal-500 font-extrabold">+15 XP</span>
-                          </button>
-                          <button 
-                            onClick={() => handleQuickSalahLog(p.key, 'completed')}
-                            className="text-left text-[10px] font-bold px-2.5 py-1.5 hover:bg-blue-500/10 rounded-xl hover:text-blue-500 transition flex items-center justify-between"
-                          >
-                            <span>🏠 Home (Individual)</span>
-                            <span className="text-[8px] bg-blue-500/20 px-1 py-0.5 rounded text-blue-500 font-extrabold">+15 XP</span>
-                          </button>
-                          <button 
-                            onClick={() => handleQuickSalahLog(p.key, 'delayed')}
-                            className="text-left text-[10px] font-bold px-2.5 py-1.5 hover:bg-amber-500/10 rounded-xl hover:text-amber-500 transition flex items-center justify-between"
-                          >
-                            <span>⏳ Delayed Salah</span>
-                            <span className="text-[8px] bg-amber-500/20 px-1 py-0.5 rounded text-amber-500 font-extrabold">+5 XP</span>
-                          </button>
-                          <button 
-                            onClick={() => handleQuickSalahLog(p.key, 'missed')}
-                            className="text-left text-[10px] font-bold px-2.5 py-1.5 hover:bg-red-500/10 rounded-xl hover:text-red-555 transition flex items-center justify-between"
-                          >
-                            <span>❌ Missed Salah</span>
-                            <span className="text-[8px] bg-red-500/20 px-1 py-0.5 rounded text-red-500 font-extrabold">+0 XP</span>
-                          </button>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
+                  
+                  <span className={`px-2.5 py-1 rounded-xl border text-[9px] font-extrabold transition-all duration-300 ${getPrayerColor(status)}`}>
+                    {getPrayerLabel(status)}
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* B. QUICK ACTION CONTROL PANEL */}
-        <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40 flex flex-col h-full justify-between">
+        {/* B. SPIRITUAL FOCUS EXECUTIVE ACTIVITY DECK */}
+        <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40 flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-black text-text-primary tracking-tight mb-4">Quick Action center</h3>
+            <h3 className="text-sm font-black text-text-primary tracking-tight mb-4">Spiritual Focus Deck</h3>
             
             <div className="grid grid-cols-2 gap-3.5">
-              {/* 1. Dhikr Modal button */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
+              {/* Card 1: Quran */}
+              <motion.div
+                whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setTasbihCount(0);
-                  setActiveModal('dhikr');
-                }}
-                className="p-4 rounded-2xl border border-transparent bg-gradient-to-br from-amber-500/15 to-orange-500/15 text-amber-500 font-bold text-xs text-center flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow hover:border-amber-500/25 transition-all duration-200 cursor-pointer"
+                onClick={() => setActiveTab('quran')}
+                className="p-4 rounded-2xl border border-border-color/65 bg-bg-secondary/40 text-left flex flex-col justify-between h-[135px] cursor-pointer group relative overflow-hidden transition-all duration-200"
               >
-                <Compass size={20} />
-                <span>Quick Tasbih</span>
-              </motion.button>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent blur-xl rounded-full" />
+                <div className="flex justify-between items-start">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center text-blue-500">
+                    <BookOpen size={18} />
+                  </div>
+                  <ArrowUpRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 group-hover:text-blue-500 transition-all" />
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-black tracking-wider text-blue-550">Quran Progress</span>
+                  <h4 className="text-xs font-bold text-text-primary mt-1 truncate">
+                    {lastSurahName}
+                  </h4>
+                  <p className="text-[9px] text-text-secondary mt-0.5">
+                    Ayah {quranProgress.lastAyah} • {quranReadToday > 0 ? `${quranReadToday} pgs read` : 'No reading today'}
+                  </p>
+                </div>
+              </motion.div>
 
-              {/* 2. Quran Modal button */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
+              {/* Card 2: Dhikr */}
+              <motion.div
+                whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setQuranPages(2);
-                  setActiveModal('quran');
-                }}
-                className="p-4 rounded-2xl border border-transparent bg-gradient-to-br from-blue-500/15 to-indigo-500/15 text-blue-500 font-bold text-xs text-center flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow hover:border-blue-500/25 transition-all duration-200 cursor-pointer"
+                onClick={() => setActiveTab('dhikr')}
+                className="p-4 rounded-2xl border border-border-color/65 bg-bg-secondary/40 text-left flex flex-col justify-between h-[135px] cursor-pointer group relative overflow-hidden transition-all duration-200"
               >
-                <BookOpen size={20} />
-                <span>Log Quran</span>
-              </motion.button>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent blur-xl rounded-full" />
+                <div className="flex justify-between items-start">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-500">
+                    <Compass size={18} />
+                  </div>
+                  <ArrowUpRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 group-hover:text-amber-500 transition-all" />
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-black tracking-wider text-amber-550">Tasbih & Dhikr</span>
+                  <h4 className="text-xs font-bold text-text-primary mt-1 truncate">
+                    {lastDhikrLog ? lastDhikrLog.name : 'Recite Azkar'}
+                  </h4>
+                  <p className="text-[9px] text-text-secondary mt-0.5">
+                    {dhikrRecitedToday} recited today {lastDhikrLog ? `• Last: ${lastDhikrLog.count}` : ''}
+                  </p>
+                </div>
+              </motion.div>
 
-              {/* 3. Expense Modal button */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
+              {/* Card 3: Sadaqah & Finance */}
+              <motion.div
+                whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setExpenseAmount('');
-                  setExpenseDesc('');
-                  setActiveModal('expense');
-                }}
-                className="p-4 rounded-2xl border border-transparent bg-gradient-to-br from-red-500/15 to-rose-500/15 text-red-500 font-bold text-xs text-center flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow hover:border-red-500/25 transition-all duration-200 cursor-pointer"
+                onClick={() => setActiveTab('finances')}
+                className="p-4 rounded-2xl border border-border-color/65 bg-bg-secondary/40 text-left flex flex-col justify-between h-[135px] cursor-pointer group relative overflow-hidden transition-all duration-200"
               >
-                <Wallet size={20} />
-                <span>Log Expense</span>
-              </motion.button>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-transparent blur-xl rounded-full" />
+                <div className="flex justify-between items-start">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-500">
+                    <Wallet size={18} />
+                  </div>
+                  <ArrowUpRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 group-hover:text-emerald-500 transition-all" />
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-black tracking-wider text-emerald-550">Sadaqah Hub</span>
+                  <h4 className="text-xs font-bold text-text-primary mt-1 truncate">
+                    ${charityMonthTotal.toFixed(2)} spent
+                  </h4>
+                  <p className="text-[9px] text-text-secondary mt-0.5">
+                    Charity this month {zakatHistory.length > 0 ? '• Zakat Paid' : ''}
+                  </p>
+                </div>
+              </motion.div>
 
-              {/* 4. Journal Modal button */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
+              {/* Card 4: Journal reflections */}
+              <motion.div
+                whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setJournalText('');
-                  setActiveModal('journal');
-                }}
-                className="p-4 rounded-2xl border border-transparent bg-gradient-to-br from-purple-500/15 to-pink-500/15 text-purple-500 font-bold text-xs text-center flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow hover:border-purple-500/25 transition-all duration-200 cursor-pointer"
+                onClick={() => setActiveTab('journal')}
+                className="p-4 rounded-2xl border border-border-color/65 bg-bg-secondary/40 text-left flex flex-col justify-between h-[135px] cursor-pointer group relative overflow-hidden transition-all duration-200"
               >
-                <PenTool size={20} />
-                <span>Daily Journal</span>
-              </motion.button>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent blur-xl rounded-full" />
+                <div className="flex justify-between items-start">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-center text-purple-500">
+                    <PenTool size={18} />
+                  </div>
+                  <ArrowUpRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 group-hover:text-purple-500 transition-all" />
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-black tracking-wider text-purple-550">Reflections</span>
+                  <h4 className="text-xs font-bold text-text-primary mt-1 truncate">
+                    {lastJournalEntry ? `${lastJournalEntry.mood} mood` : 'No Entry Today'}
+                  </h4>
+                  <p className="text-[9px] text-text-secondary mt-0.5 truncate max-w-full">
+                    {lastJournalEntry ? lastJournalEntry.text : 'Reflect on your day'}
+                  </p>
+                </div>
+              </motion.div>
             </div>
           </div>
           
@@ -905,362 +811,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
                   ))}
                 </div>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* B. DETAILED DIGITAL TASBIH CLICKER MODAL */}
-      <AnimatePresence>
-        {activeModal === 'dhikr' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setActiveModal(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-sm glass border border-border-color rounded-3xl p-6 shadow-2xl relative z-10 bg-bg-secondary/90 text-left"
-            >
-              <button 
-                onClick={() => setActiveModal(null)}
-                className="absolute top-4 right-4 p-1 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-primary transition cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="flex items-center gap-3 border-b border-border-color/65 pb-3 mb-4">
-                <Compass className="text-amber-500" size={20} />
-                <h3 className="text-base font-black text-text-primary">Digital Tasbih clicker</h3>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Select Dhikr Phrase</label>
-                  <select
-                    value={tasbihPhrase}
-                    onChange={(e) => {
-                      setTasbihPhrase(e.target.value);
-                      setTasbihCount(0);
-                    }}
-                    className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary"
-                  >
-                    <option value="Subhan Allah">Subhan Allah (Glory be to Allah)</option>
-                    <option value="Alhamdulillah">Alhamdulillah (Praise be to Allah)</option>
-                    <option value="Allahu Akbar">Allahu Akbar (Allah is the Greatest)</option>
-                    <option value="Astaghfirullah">Astaghfirullah (I seek forgiveness)</option>
-                    <option value="La ilaha illa Allah">La ilaha illa Allah (No god but Allah)</option>
-                  </select>
-                </div>
-
-                {/* Main digital counter button */}
-                <div className="flex flex-col items-center py-6 justify-center">
-                  <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Count Progress</span>
-                  <span className="text-5xl font-black text-text-primary font-mono tracking-tighter mb-4">
-                    {tasbihCount} <span className="text-xs text-text-muted font-normal">/ {tasbihTarget}</span>
-                  </span>
-
-                  {/* Circular button gemstone */}
-                  <button
-                    onClick={handleTasbihTap}
-                    className="w-36 h-36 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold shadow-lg relative overflow-hidden flex items-center justify-center scale-100 active:scale-95 transition-transform cursor-pointer border-4 border-white/20"
-                  >
-                    {/* Visual ripples */}
-                    {ripples.map(r => (
-                      <span 
-                        key={r.id}
-                        className="absolute w-6 h-6 rounded-full bg-white/30 animate-ping pointer-events-none"
-                        style={{ left: r.x - 12, top: r.y - 12 }}
-                      />
-                    ))}
-                    <span className="text-2xl font-black select-none">TAP</span>
-                  </button>
-                </div>
-
-                <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={() => setTasbihCount(0)}
-                    className="flex-1 py-2 rounded-xl border border-border-color text-xs font-bold text-text-secondary hover:bg-bg-tertiary transition cursor-pointer"
-                  >
-                    Reset Count
-                  </button>
-                  <button
-                    onClick={saveTasbihSession}
-                    className="flex-1 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition shadow cursor-pointer"
-                  >
-                    Save Session
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* C. QURAN LOG PROGRESS MODAL */}
-      <AnimatePresence>
-        {activeModal === 'quran' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setActiveModal(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-sm glass border border-border-color rounded-3xl p-6 shadow-2xl relative z-10 bg-bg-secondary/90 text-left"
-            >
-              <button 
-                onClick={() => setActiveModal(null)}
-                className="absolute top-4 right-4 p-1 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-primary transition cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="flex items-center gap-3 border-b border-border-color/65 pb-3 mb-4">
-                <BookOpen className="text-blue-500" size={20} />
-                <h3 className="text-base font-black text-text-primary">Log Quran progress</h3>
-              </div>
-
-              <form onSubmit={saveQuranProgress} className="space-y-4">
-                <div>
-                  <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Pages Read Today</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quranPages}
-                    onChange={(e) => setQuranPages(Math.max(1, parseInt(e.target.value) || 0))}
-                    className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Surah Number</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="114"
-                      value={quranSurah}
-                      onChange={(e) => setQuranSurah(Math.min(114, Math.max(1, parseInt(e.target.value) || 1)))}
-                      className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Ayah Number</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={quranAyah}
-                      onChange={(e) => setQuranAyah(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition shadow cursor-pointer"
-                  >
-                    Save Progress Log (+{quranPages * 15} XP)
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* D. EXPENSE QUICK LOGGER MODAL */}
-      <AnimatePresence>
-        {activeModal === 'expense' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setActiveModal(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-sm glass border border-border-color rounded-3xl p-6 shadow-2xl relative z-10 bg-bg-secondary/90 text-left"
-            >
-              <button 
-                onClick={() => setActiveModal(null)}
-                className="absolute top-4 right-4 p-1 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-primary transition cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="flex items-center gap-3 border-b border-border-color/65 pb-3 mb-4">
-                <Wallet className="text-red-500" size={20} />
-                <h3 className="text-base font-black text-text-primary">Add Halal expense</h3>
-              </div>
-
-              <form onSubmit={saveExpense} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Amount ($ USD)</label>
-                    <input
-                      type="text"
-                      placeholder="0.00"
-                      value={expenseAmount}
-                      onChange={(e) => setExpenseAmount(e.target.value)}
-                      className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Category</label>
-                    <select
-                      value={expenseCategory}
-                      onChange={(e: any) => setExpenseCategory(e.target.value)}
-                      className="w-full border border-border-color rounded-xl px-3 py-2.5 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary"
-                    >
-                      <option value="charity">Charity / Sadaqah</option>
-                      <option value="food">Food & Drink</option>
-                      <option value="family">Family & Home</option>
-                      <option value="bills">Utility Bills</option>
-                      <option value="education">Education</option>
-                      <option value="business">Halal Business</option>
-                      <option value="entertainment">Entertainment</option>
-                      <option value="custom">Custom Miscellaneous</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Description</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Mosque Charity donations"
-                    value={expenseDesc}
-                    onChange={(e) => setExpenseDesc(e.target.value)}
-                    className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition shadow cursor-pointer"
-                  >
-                    Save Expense
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* E. GRATITUDE JOURNAL ENTRY MODAL */}
-      <AnimatePresence>
-        {activeModal === 'journal' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setActiveModal(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md glass border border-border-color rounded-3xl p-6 shadow-2xl relative z-10 bg-bg-secondary/90 text-left"
-            >
-              <button 
-                onClick={() => setActiveModal(null)}
-                className="absolute top-4 right-4 p-1 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-primary transition cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="flex items-center gap-3 border-b border-border-color/65 pb-3 mb-4">
-                <PenTool className="text-purple-500" size={20} />
-                <h3 className="text-base font-black text-text-primary">Gratitude & Reflections</h3>
-              </div>
-
-              <form onSubmit={saveJournalEntry} className="space-y-4">
-                <div>
-                  <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Reflection Prompt</label>
-                  <select
-                    value={journalPrompt}
-                    onChange={(e: any) => setJournalPrompt(e.target.value)}
-                    className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary"
-                  >
-                    <option value="gratitude">Gratitude: What are you grateful for today?</option>
-                    <option value="challenges">Challenges: What challenges did you face?</option>
-                    <option value="intentions">Intentions: How can you make tomorrow better?</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1">Reflections</label>
-                  <textarea
-                    rows={4}
-                    value={journalText}
-                    onChange={(e) => setJournalText(e.target.value)}
-                    placeholder="Reflect sincerely on your day..."
-                    className="w-full border border-border-color rounded-xl px-3 py-2 text-xs bg-bg-primary text-text-primary focus:outline-none focus:border-primary resize-none leading-relaxed"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-1.5">Your Mood State</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Blessed', 'Peaceful', 'Neutral', 'Anxious', 'Struggling'].map((m) => {
-                      const emoji = m === 'Blessed' ? '😇' : m === 'Peaceful' ? '😌' : m === 'Neutral' ? '😐' : m === 'Anxious' ? '😟' : '💪';
-                      return (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => setJournalMood(m)}
-                          className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all cursor-pointer ${
-                            journalMood === m 
-                              ? 'bg-primary/10 border-primary text-primary shadow-sm' 
-                              : 'bg-bg-primary border-border-color text-text-secondary hover:border-text-muted'
-                          }`}
-                        >
-                          {emoji} {m}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition shadow cursor-pointer"
-                  >
-                    Save Entry (+30 XP)
-                  </button>
-                </div>
-              </form>
             </motion.div>
           </div>
         )}
