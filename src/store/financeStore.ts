@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { dbService, isSupabaseConfigured } from '../services/supabase';
 import { useDeenStore } from './deenStore';
+import { useNotificationStore } from './notificationStore';
 
 export interface Subscription {
   id: string;
@@ -268,6 +269,12 @@ export const useFinanceStore = create<FinanceState>((set, get) => {
       set({ zakatHistory: updated });
       saveState({ zakatHistory: updated });
       
+      useNotificationStore.getState().addNotification(
+        'Zakat Paid Successfully 💚',
+        `Masha'Allah! You logged a Zakat payment of $${calc.zakatDue.toFixed(2)}.`,
+        'zakat'
+      );
+
       get().addExpense(calc.zakatDue, 'charity', 'Zakat Obligatory Annual Payment', calc.calculatedAt.split('T')[0]);
 
       // Sync with Supabase DDL

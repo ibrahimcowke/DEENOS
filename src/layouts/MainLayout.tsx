@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUIStore } from '../store/uiStore';
 import { useDeenStore } from '../store/deenStore';
+import { useNotificationStore } from '../store/notificationStore';
 import { 
   LayoutDashboard, BookOpen, Compass, Leaf, Wallet, Target, PenTool, 
   MessageSquare, Moon, Sun, Globe, MoonStar, Settings, ChevronLeft, ChevronRight, Bell, Sparkles,
@@ -22,10 +23,57 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, set
   } = useUIStore();
 
   const { level, xp } = useDeenStore();
+  const { notifications, markAllAsRead, clearAll } = useNotificationStore();
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
   const [showMobileMore, setShowMobileMore] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    if (showNotificationDrawer) {
+      markAllAsRead();
+    }
+  }, [showNotificationDrawer, markAllAsRead]);
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'xp':
+        return <Sparkles className="text-primary mt-0.5 shrink-0" size={14} />;
+      case 'salah':
+        return <MoonStar className="text-amber-500 mt-0.5 shrink-0" size={14} />;
+      case 'quran':
+        return <BookOpen className="text-emerald-500 mt-0.5 shrink-0" size={14} />;
+      case 'dhikr':
+        return <Compass className="text-cyan-500 mt-0.5 shrink-0" size={14} />;
+      case 'habit':
+        return <Leaf className="text-green-500 mt-0.5 shrink-0" size={14} />;
+      case 'goal':
+        return <Target className="text-indigo-500 mt-0.5 shrink-0" size={14} />;
+      case 'zakat':
+        return <Wallet className="text-teal-500 mt-0.5 shrink-0" size={14} />;
+      default:
+        return <Bell className="text-text-muted mt-0.5 shrink-0" size={14} />;
+    }
+  };
+
+  const formatTimeAgo = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d ago`;
+    } catch (e) {
+      return '';
+    }
+  };
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -273,38 +321,60 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, set
                 className="p-2 rounded-xl border border-border-color hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer relative"
               >
                 <Bell size={16} />
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-danger ring-2 ring-bg-secondary" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-danger ring-2 ring-bg-secondary flex items-center justify-center text-[9px] text-white font-black animate-in zoom-in duration-200">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
               
               {/* Notifications dropdown panel */}
               {showNotificationDrawer && (
                 <div className="absolute right-0 mt-2 w-80 glass border border-border-color rounded-2xl p-4 shadow-2xl z-50 animate-in fade-in slide-in-from-top-3 duration-250">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-text-muted">System Messages</span>
-                    <button 
-                      onClick={() => setShowNotificationDrawer(false)}
-                      className="text-[10px] text-primary font-bold hover:underline"
-                    >
-                      Clear All
-                    </button>
+                  <div className="flex justify-between items-center mb-3 border-b border-border-color/40 pb-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-text-muted">System Messages</span>
+                    {notifications.length > 0 && (
+                      <button 
+                        onClick={() => {
+                          clearAll();
+                        }}
+                        className="text-[10px] text-primary font-bold hover:underline"
+                      >
+                        Clear All
+                      </button>
+                    )}
                   </div>
-                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                    <div className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-bg-primary transition text-xs border border-border-color bg-bg-secondary">
-                      <Sparkles className="text-primary mt-0.5 shrink-0" size={14} />
-                      <div>
-                        <span className="font-bold block text-text-primary">XP Goal Met!</span>
-                        <span className="text-text-secondary block mt-0.5">Masha'Allah! You logged 10 Dhikr reps and earned 10 XP points.</span>
-                        <span className="text-[9px] text-text-muted mt-1 block">Just now</span>
+                  <div className="space-y-2 mt-2 max-h-60 overflow-y-auto pr-1">
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-6 text-xs text-text-muted">
+                        No notifications yet
                       </div>
-                    </div>
-                    <div className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-bg-primary transition text-xs border border-border-color bg-bg-secondary">
-                      <MoonStar className="text-amber-500 mt-0.5 shrink-0" size={14} />
-                      <div>
-                        <span className="font-bold block text-text-primary">Asr Prayer Incoming</span>
-                        <span className="text-text-secondary block mt-0.5">Asr prayer starts in 45 minutes. Prepare your Wudu.</span>
-                        <span className="text-[9px] text-text-muted mt-1 block">30 mins ago</span>
-                      </div>
-                    </div>
+                    ) : (
+                      notifications.map((notif) => {
+                        const icon = getNotificationIcon(notif.type);
+                        return (
+                          <div 
+                            key={notif.id} 
+                            className={`flex items-start gap-2.5 p-2 rounded-xl transition text-xs border ${
+                              notif.isRead 
+                                ? 'border-border-color/30 bg-bg-secondary/20 text-text-secondary' 
+                                : 'border-primary/20 bg-primary/5 text-text-primary shadow-sm'
+                            }`}
+                          >
+                            <div className="mt-0.5 shrink-0">
+                              {icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-extrabold block text-text-primary truncate">{notif.title}</span>
+                              <span className="text-text-secondary block mt-0.5 break-words leading-relaxed">{notif.body}</span>
+                              <span className="text-[9px] text-text-muted mt-1 block">
+                                {formatTimeAgo(notif.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               )}

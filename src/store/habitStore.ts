@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { dbService, isSupabaseConfigured } from '../services/supabase';
 import { useDeenStore } from './deenStore';
+import { useNotificationStore } from './notificationStore';
 
 export interface Habit {
   id: string;
@@ -230,6 +231,17 @@ export const useHabitStore = create<HabitState>((set, get) => {
 
       set({ habits: updatedHabits, habitLogs: updatedLogs });
       saveState({ habits: updatedHabits, habitLogs: updatedLogs });
+
+      if (status === 'completed') {
+        const habit = updatedHabits.find((h: Habit) => h.id === habitId);
+        if (habit) {
+          useNotificationStore.getState().addNotification(
+            'Habit Watered! 💧',
+            `You watered your habit '${habit.name}'! Current streak: ${habit.currentStreak}.`,
+            'habit'
+          );
+        }
+      }
 
       // Sync with Supabase DDL
       dbService.logHabit(habitId, status, date);

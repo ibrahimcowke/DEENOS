@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import confetti from 'canvas-confetti';
 import { dbService, isSupabaseConfigured } from '../services/supabase';
+import { useNotificationStore } from './notificationStore';
 
 export interface PrayerLog {
   prayer_name: string;
@@ -271,6 +272,14 @@ export const useDeenStore = create<DeenState>((set, get) => {
       // Sync with Supabase DDL
       if (status) {
         dbService.logPrayer(get().userId, prayerName, status, date);
+        const readableStatus = status.replace('_', ' ');
+        const capStatus = readableStatus.charAt(0).toUpperCase() + readableStatus.slice(1);
+        const capName = prayerName.charAt(0).toUpperCase() + prayerName.slice(1);
+        useNotificationStore.getState().addNotification(
+          `${capName} Prayer Logged`,
+          `Masha'Allah! You logged ${capName} as '${capStatus}'.`,
+          "salah"
+        );
       }
 
       const getStatusXp = (stat: string | null) => {
@@ -335,6 +344,12 @@ export const useDeenStore = create<DeenState>((set, get) => {
         set({ nawafilLogs: updatedLogs });
         saveState({ nawafilLogs: updatedLogs });
         get().addXp(5);
+        const capName = prayerName.charAt(0).toUpperCase() + prayerName.slice(1);
+        useNotificationStore.getState().addNotification(
+          `${capName} Nawafil Logged`,
+          `Masha'Allah! You completed optional ${capName} prayer.`,
+          "salah"
+        );
       }
     },
 
@@ -379,6 +394,12 @@ export const useDeenStore = create<DeenState>((set, get) => {
         juz_number: Math.min(30, Math.floor(updated.pagesRead / 20) + 1),
         total_pages_read: updated.pagesRead
       });
+
+      useNotificationStore.getState().addNotification(
+        'Quran Reading Logged 📖',
+        `Masha'Allah! You logged reading ${amount} ${mode === 'pages' ? 'pages' : 'ayahs'}.`,
+        'quran'
+      );
 
       get().addXp(xpEarned);
       get().unlockAchievement('quran_start');
@@ -487,6 +508,12 @@ export const useDeenStore = create<DeenState>((set, get) => {
         logged_at: new Date(date).toISOString()
       });
 
+      useNotificationStore.getState().addNotification(
+        'Tasbih Logged 📿',
+        `You completed ${count} repetitions of ${name}.`,
+        'dhikr'
+      );
+
       get().addXp(Math.floor(count / 10));
       if (count >= 100) {
         get().unlockAchievement('tasbih_master');
@@ -514,6 +541,20 @@ export const useDeenStore = create<DeenState>((set, get) => {
         }, 100);
       }
 
+      if (nextLevel > currentLevel) {
+        useNotificationStore.getState().addNotification(
+          'Level Up! 🎉',
+          `Alhamdulillah! You reached Level ${nextLevel}.`,
+          'xp'
+        );
+      } else if (amount > 0) {
+        useNotificationStore.getState().addNotification(
+          'XP Gained! ⚡',
+          `You earned +${amount} XP for your spiritual efforts.`,
+          'xp'
+        );
+      }
+
       set({ xp: nextXp, level: nextLevel });
       saveState({ xp: nextXp, level: nextLevel });
 
@@ -525,6 +566,8 @@ export const useDeenStore = create<DeenState>((set, get) => {
     },
 
     unlockAchievement: (id: string) => {
+      let unlockedAchName = '';
+      let xpReward = 0;
       const achievements = get().achievements.map((ach: Achievement) => {
         if (ach.id === id && !ach.unlocked) {
           setTimeout(() => {
@@ -535,11 +578,21 @@ export const useDeenStore = create<DeenState>((set, get) => {
             });
           }, 50);
           
+          unlockedAchName = ach.name;
+          xpReward = ach.xpReward;
           get().addXp(ach.xpReward);
           return { ...ach, unlocked: true };
         }
         return ach;
       });
+
+      if (unlockedAchName) {
+        useNotificationStore.getState().addNotification(
+          `Badge Unlocked: ${unlockedAchName} 🏆`,
+          `Congratulations! You unlocked the '${unlockedAchName}' badge and earned ${xpReward} XP.`,
+          'general'
+        );
+      }
 
       set({ achievements });
       saveState({ achievements });
@@ -623,6 +676,11 @@ export const useDeenStore = create<DeenState>((set, get) => {
       const next = current + 1;
       set({ ramadanFastsLogged: next });
       saveState({ ramadanFastsLogged: next });
+      useNotificationStore.getState().addNotification(
+        'Ramadan Fast Logged 🌙',
+        `Alhamdulillah! Fast #${next} of Ramadan logged.`,
+        'general'
+      );
       get().unlockAchievement('ramadan_fast');
     },
 
@@ -648,6 +706,11 @@ export const useDeenStore = create<DeenState>((set, get) => {
       current[key] = true;
       set({ loggedSunnahFasts: current });
       saveState({ loggedSunnahFasts: current });
+      useNotificationStore.getState().addNotification(
+        'Sunnah Fast Logged 🌙',
+        `Masha'Allah! You logged a Sunnah fast for ${monthKey}-${day}.`,
+        'general'
+      );
       get().addXp(20);
     }
   };
