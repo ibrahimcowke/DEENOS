@@ -153,24 +153,63 @@ export const SalahTracker: React.FC = () => {
     logNawafil(key, today);
   };
 
-  const weeklyAnalyticsData = [
-    { day: 'Mon', rate: 80 },
-    { day: 'Tue', rate: 100 },
-    { day: 'Wed', rate: 60 },
-    { day: 'Thu', rate: 80 },
-    { day: 'Fri', rate: 100 },
-    { day: 'Sat', rate: 100 },
-    { day: 'Sun', rate: 85 }
-  ];
+  const getWeeklyAnalyticsData = () => {
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayLabel = d.toLocaleDateString(undefined, { weekday: 'short' });
+      
+      const dayLogs = prayerLogs.filter(l => l.date === dateStr);
+      const completedCount = dayLogs.filter(l => l.status && l.status !== 'missed' && l.status !== '').length;
+      const rate = Math.round((completedCount / 5) * 100);
+      
+      data.push({
+        day: dayLabel,
+        rate: rate
+      });
+    }
+    return data;
+  };
 
-  const prayerDistributionData = [
-    { name: 'Mosque', value: 12 },
-    { name: 'Congregation', value: 8 },
-    { name: 'Home', value: 15 },
-    { name: 'Outside', value: 6 },
-    { name: 'Delayed', value: 3 },
-    { name: 'Missed', value: 2 }
-  ];
+  const getPrayerDistributionData = () => {
+    let mosque = 0;
+    let congregation = 0;
+    let home = 0;
+    let outside = 0;
+    let delayed = 0;
+    let missed = 0;
+
+    prayerLogs.forEach(log => {
+      if (log.status === 'jamaah_mosque') {
+        mosque += 1;
+        congregation += 1;
+      } else if (log.status === 'individual_mosque') {
+        mosque += 1;
+      } else if (log.status === 'completed') {
+        home += 1;
+      } else if (log.status === 'individual_outside') {
+        outside += 1;
+      } else if (log.status === 'delayed') {
+        delayed += 1;
+      } else if (log.status === 'missed') {
+        missed += 1;
+      }
+    });
+
+    return [
+      { name: 'Mosque', value: mosque },
+      { name: 'Congregation', value: congregation },
+      { name: 'Home', value: home },
+      { name: 'Outside', value: outside },
+      { name: 'Delayed', value: delayed },
+      { name: 'Missed', value: missed }
+    ];
+  };
+
+  const weeklyAnalyticsData = getWeeklyAnalyticsData();
+  const prayerDistributionData = getPrayerDistributionData();
 
   return (
     <div className="space-y-6">

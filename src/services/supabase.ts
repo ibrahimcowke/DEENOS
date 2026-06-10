@@ -333,6 +333,42 @@ export const dbService = {
     return { success: true, error: null };
   },
 
+  // --- Journal Entries ---
+  async getJournalEntries(userId: string) {
+    if (isDbActive()) {
+      const { data, error } = await supabase!
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .order('entry_date', { ascending: false });
+      if (!error) return data;
+    }
+    return [];
+  },
+
+  async insertJournalEntry(userId: string, entry: any) {
+    if (isDbActive()) {
+      const { data, error } = await supabase!
+        .from('journal_entries')
+        .insert({ user_id: userId, ...entry })
+        .select()
+        .single();
+      return { success: !error, data, error };
+    }
+    return { success: true, data: entry, error: null };
+  },
+
+  async deleteJournalEntry(entryId: string) {
+    if (isDbActive()) {
+      const { error } = await supabase!
+        .from('journal_entries')
+        .delete()
+        .eq('id', entryId);
+      return { success: !error, error };
+    }
+    return { success: true, error: null };
+  },
+
   // --- Master User Synchronizer ---
   async fetchAllUserData(userId: string) {
     if (!isDbActive()) {

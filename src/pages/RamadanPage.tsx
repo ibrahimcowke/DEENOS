@@ -1,26 +1,32 @@
 import React, { useState } from 'react';
 import { useDeenStore } from '../store/deenStore';
+import { useFinanceStore } from '../store/financeStore';
 import { MoonStar, Calendar, Gift, Award, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import confetti from 'canvas-confetti';
 
 export const RamadanPage: React.FC = () => {
   const { t } = useTranslation();
-  const { unlockAchievement, addXp } = useDeenStore();
+  const { 
+    ramadanFastsLogged, ramadanSuhoorChecklist, ramadanIftarChecklist, loggedSunnahFasts,
+    logRamadanFast, toggleSuhoorChecklist, toggleIftarChecklist, logSunnahFast
+  } = useDeenStore();
+  const { expenses } = useFinanceStore();
+  
   const [activeSubTab, setActiveSubTab] = useState<'ramadan' | 'hijri'>('ramadan');
 
-  // Ramadan states
-  const [fastsLogged, setFastsLogged] = useState(0);
-  const [suhoorList, setSuhoorList] = useState([false, false, false]);
-  const [iftarList, setIftarList] = useState([false, false, false]);
-
-  // Hijri Fasting Planner states
-  const [loggedSunnahFasts, setLoggedSunnahFasts] = useState<Record<string, boolean>>({});
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const totalCharityThisMonth = expenses
+    .filter(e => {
+      const d = new Date(e.date);
+      return e.category === 'charity' && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .reduce((acc, e) => acc + e.amount, 0);
 
   const handleLogFast = () => {
-    if (fastsLogged >= 30) return;
-    setFastsLogged(prev => prev + 1);
-    unlockAchievement('ramadan_fast');
+    if (ramadanFastsLogged >= 30) return;
+    logRamadanFast();
     
     confetti({
       particleCount: 100,
@@ -31,10 +37,9 @@ export const RamadanPage: React.FC = () => {
 
   const handleLogSunnahFast = (monthKey: string, day: number) => {
     const key = `${monthKey}-${day}`;
-    if (loggedSunnahFasts[key]) return;
+    if (loggedSunnahFasts && loggedSunnahFasts[key]) return;
     
-    setLoggedSunnahFasts(prev => ({ ...prev, [key]: true }));
-    addXp(20); // Reward 20 XP for Sunnah fasting!
+    logSunnahFast(monthKey, day);
     
     confetti({
       particleCount: 50,
@@ -205,40 +210,46 @@ export const RamadanPage: React.FC = () => {
               <div className="glass-card border border-border-color rounded-2xl p-5 bg-bg-secondary/40 space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">Suhoor Checklist</h3>
                 <div className="space-y-2">
-                  {suhoorItems.map((item, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSuhoorList(suhoorList.map((val, i) => i === idx ? !val : val))}
-                      className="flex items-center gap-3 w-full text-left py-1 text-xs text-text-secondary hover:text-text-primary transition cursor-pointer"
-                    >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                        suhoorList[idx] ? 'bg-primary border-primary text-white' : 'border-border-color'
-                      }`}>
-                        {suhoorList[idx] && <Check size={12} />}
-                      </div>
-                      <span className={suhoorList[idx] ? 'line-through text-text-muted font-medium' : 'font-medium'}>{item}</span>
-                    </button>
-                  ))}
+                  {suhoorItems.map((item, idx) => {
+                    const isChecked = ramadanSuhoorChecklist ? ramadanSuhoorChecklist[idx] : false;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => toggleSuhoorChecklist(idx)}
+                        className="flex items-center gap-3 w-full text-left py-1 text-xs text-text-secondary hover:text-text-primary transition cursor-pointer"
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                          isChecked ? 'bg-primary border-primary text-white' : 'border-border-color'
+                        }`}>
+                          {isChecked && <Check size={12} />}
+                        </div>
+                        <span className={isChecked ? 'line-through text-text-muted font-medium' : 'font-medium'}>{item}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div className="glass-card border border-border-color rounded-2xl p-5 bg-bg-secondary/40 space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted">Iftar Checklist</h3>
                 <div className="space-y-2">
-                  {iftarItems.map((item, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setIftarList(iftarList.map((val, i) => i === idx ? !val : val))}
-                      className="flex items-center gap-3 w-full text-left py-1 text-xs text-text-secondary hover:text-text-primary transition cursor-pointer"
-                    >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                        iftarList[idx] ? 'bg-primary border-primary text-white' : 'border-border-color'
-                      }`}>
-                        {iftarList[idx] && <Check size={12} />}
-                      </div>
-                      <span className={iftarList[idx] ? 'line-through text-text-muted font-medium' : 'font-medium'}>{item}</span>
-                    </button>
-                  ))}
+                  {iftarItems.map((item, idx) => {
+                    const isChecked = ramadanIftarChecklist ? ramadanIftarChecklist[idx] : false;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => toggleIftarChecklist(idx)}
+                        className="flex items-center gap-3 w-full text-left py-1 text-xs text-text-secondary hover:text-text-primary transition cursor-pointer"
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                          isChecked ? 'bg-primary border-primary text-white' : 'border-border-color'
+                        }`}>
+                          {isChecked && <Check size={12} />}
+                        </div>
+                        <span className={isChecked ? 'line-through text-text-muted font-medium' : 'font-medium'}>{item}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -249,7 +260,7 @@ export const RamadanPage: React.FC = () => {
               <Calendar className="text-amber-500" size={24} />
               <div>
                 <span className="text-xs font-semibold text-text-muted block">Fasting Progress</span>
-                <span className="text-lg font-black text-text-primary">{fastsLogged} / 30 Fasts</span>
+                <span className="text-lg font-black text-text-primary">{ramadanFastsLogged} / 30 Fasts</span>
               </div>
             </div>
 
@@ -257,7 +268,7 @@ export const RamadanPage: React.FC = () => {
               <Gift className="text-amber-500" size={24} />
               <div>
                 <span className="text-xs font-semibold text-text-muted block">Ramadan Sadaqah Target</span>
-                <span className="text-lg font-black text-text-primary">$150 / $300</span>
+                <span className="text-lg font-black text-text-primary">${totalCharityThisMonth.toFixed(2)} / $300</span>
               </div>
             </div>
 

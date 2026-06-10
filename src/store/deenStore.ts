@@ -65,6 +65,12 @@ interface DeenState {
   achievements: Achievement[];
   userId: string;
   
+  // Ramadan & Fasting States
+  ramadanFastsLogged: number;
+  ramadanSuhoorChecklist: boolean[];
+  ramadanIftarChecklist: boolean[];
+  loggedSunnahFasts: Record<string, boolean>;
+  
   // Actions
   setUserId: (id: string) => void;
   syncSpiritualData: () => Promise<void>;
@@ -83,6 +89,10 @@ interface DeenState {
   addQuranNote: (surah: number, ayah: number, note: string) => void;
   editQuranNote: (id: string, note: string) => void;
   deleteQuranNote: (id: string) => void;
+  logRamadanFast: () => void;
+  toggleSuhoorChecklist: (idx: number) => void;
+  toggleIftarChecklist: (idx: number) => void;
+  logSunnahFast: (monthKey: string, day: number) => void;
 }
 
 const defaultAchievements: Achievement[] = [
@@ -130,13 +140,17 @@ const INITIAL_STATE = getStoredDeenState() || {
   level: 1,
   dailyStreak: 1,
   achievements: defaultAchievements,
-  userId: 'offline-servant-user'
+  userId: 'offline-servant-user',
+  ramadanFastsLogged: 0,
+  ramadanSuhoorChecklist: [false, false, false],
+  ramadanIftarChecklist: [false, false, false],
+  loggedSunnahFasts: {}
 };
 
 export const useDeenStore = create<DeenState>((set, get) => {
   const saveState = (newState: Partial<DeenState>) => {
     const currentState = { ...get(), ...newState };
-    const { logPrayer, logNawafil, updateQuranProgress, editQuranLog, deleteQuranLog, logDhikr, addXp, getDeenScore, unlockAchievement, resetAll, setUserId, syncSpiritualData, syncOfflineData, addQuranNote, editQuranNote, deleteQuranNote, ...dataToSave } = currentState;
+    const { logPrayer, logNawafil, updateQuranProgress, editQuranLog, deleteQuranLog, logDhikr, addXp, getDeenScore, unlockAchievement, resetAll, setUserId, syncSpiritualData, syncOfflineData, addQuranNote, editQuranNote, deleteQuranNote, logRamadanFast, toggleSuhoorChecklist, toggleIftarChecklist, logSunnahFast, ...dataToSave } = currentState;
     localStorage.setItem('deenos_spiritual_state', JSON.stringify(dataToSave));
   };
 
@@ -594,9 +608,47 @@ export const useDeenStore = create<DeenState>((set, get) => {
         xp: 0,
         level: 1,
         dailyStreak: 1,
-        achievements: defaultAchievements
+        achievements: defaultAchievements,
+        ramadanFastsLogged: 0,
+        ramadanSuhoorChecklist: [false, false, false],
+        ramadanIftarChecklist: [false, false, false],
+        loggedSunnahFasts: {}
       });
       localStorage.removeItem('deenos_spiritual_state');
+    },
+
+    logRamadanFast: () => {
+      const current = get().ramadanFastsLogged || 0;
+      if (current >= 30) return;
+      const next = current + 1;
+      set({ ramadanFastsLogged: next });
+      saveState({ ramadanFastsLogged: next });
+      get().unlockAchievement('ramadan_fast');
+    },
+
+    toggleSuhoorChecklist: (idx: number) => {
+      const current = [...(get().ramadanSuhoorChecklist || [false, false, false])];
+      current[idx] = !current[idx];
+      set({ ramadanSuhoorChecklist: current });
+      saveState({ ramadanSuhoorChecklist: current });
+    },
+
+    toggleIftarChecklist: (idx: number) => {
+      const current = [...(get().ramadanIftarChecklist || [false, false, false])];
+      current[idx] = !current[idx];
+      set({ ramadanIftarChecklist: current });
+      saveState({ ramadanIftarChecklist: current });
+    },
+
+    logSunnahFast: (monthKey: string, day: number) => {
+      const key = `${monthKey}-${day}`;
+      const current = { ...(get().loggedSunnahFasts || {}) };
+      if (current[key]) return;
+      
+      current[key] = true;
+      set({ loggedSunnahFasts: current });
+      saveState({ loggedSunnahFasts: current });
+      get().addXp(20);
     }
   };
 });

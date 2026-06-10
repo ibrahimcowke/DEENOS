@@ -1,36 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useJournalStore } from '../store/journalStore';
 import { geminiService } from '../services/gemini';
-import { PenTool, Sparkles, PlusCircle } from 'lucide-react';
+import { PenTool, Sparkles, PlusCircle, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-
-interface JournalLog {
-  date: string;
-  mood: string;
-  prompt: string;
-  text: string;
-  aiSummary: string;
-}
 
 export const JournalPage: React.FC = () => {
   const { t } = useTranslation();
 
+  const { logs, syncJournalData, addJournalEntry, deleteJournalEntry } = useJournalStore();
+
+  useEffect(() => {
+    syncJournalData();
+  }, []);
+
   const [prompt, setPrompt] = useState<string>('gratitude');
   const [text, setText] = useState('');
   const [mood, setMood] = useState('Blessed');
-
-  const [logs, setLogs] = useState<JournalLog[]>(() => {
-    try {
-      const saved = localStorage.getItem('deenos_journal_logs');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('deenos_journal_logs', JSON.stringify(logs));
-  }, [logs]);
-
   const [loadingAi, setLoadingAi] = useState(false);
   const [activeSummary, setActiveSummary] = useState('');
 
@@ -75,15 +60,7 @@ export const JournalPage: React.FC = () => {
       const summaryText = await geminiService.analyzeJournalEntry(text, mood);
       setActiveSummary(summaryText);
 
-      const newLog: JournalLog = {
-        date: new Date().toISOString().split('T')[0],
-        mood,
-        prompt: selectedPromptText,
-        text,
-        aiSummary: summaryText
-      };
-
-      setLogs([newLog, ...logs]);
+      await addJournalEntry(mood, selectedPromptText, text, summaryText);
       setText('');
     } catch (err) {
       console.error(err);
@@ -220,10 +197,10 @@ export const JournalPage: React.FC = () => {
               <p className="text-xs text-text-muted text-center py-12">No journal entries logged yet. Write your reflections above!</p>
             ) : (
               logs.map((log, idx) => (
-                <div key={idx} className="p-4 rounded-xl border border-border-color bg-bg-secondary flex flex-col gap-2.5 shadow-sm">
+                <div key={log.id || idx} className="p-4 rounded-xl border border-border-color bg-bg-secondary flex flex-col gap-2.5 shadow-sm relative group">
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-text-primary">{log.date}</span>
-                    <span className="text-[10px] bg-primary/10 border border-primary/20 text-primary font-bold px-2 py-0.5 rounded-full">Mood: {log.mood}</span>
+                    <span className="text-[10px] bg-primary/10 border border-primary/20 text-primary font-bold px-2 py-0.5 rounded-full mr-6">Mood: {log.mood}</span>
                   </div>
                   <div className="text-xs text-text-muted font-medium bg-bg-tertiary p-2 rounded">
                     Q: {log.prompt}
@@ -235,6 +212,13 @@ export const JournalPage: React.FC = () => {
                       <span>AI Reflection: {log.aiSummary.replace('### 📝 AI Mindset Summary\n', '')}</span>
                     </div>
                   )}
+                  <button
+                    onClick={() => deleteJournalEntry(log.id)}
+                    className="absolute top-3 right-3 text-text-muted hover:text-danger rounded p-1 hover:bg-danger/10 transition opacity-0 group-hover:opacity-100 cursor-pointer animate-in fade-in"
+                    title="Delete Entry"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               ))
             )}

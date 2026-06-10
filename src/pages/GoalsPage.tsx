@@ -1,34 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { geminiService } from '../services/gemini';
+import { useGoalStore } from '../store/goalStore';
+import type { Goal } from '../store/goalStore';
 import { Target, PlusCircle, Sparkles, CheckSquare, Square, Trash2, Calendar } from 'lucide-react';
-
-interface Goal {
-  id: string;
-  title: string;
-  category: 'deen' | 'finance' | 'habits' | 'reading' | 'personal';
-  roadmap: string[];
-  roadmapCompleted: boolean[];
-  showRoadmap: boolean;
-  generatingPlan: boolean;
-  deadline?: string;
-  priority?: 'high' | 'medium' | 'low';
-}
 
 export const GoalsPage: React.FC = () => {
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    try {
-      const saved = localStorage.getItem('deenos_goals');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const {
+    goals, syncGoalsData, addGoal, deleteGoal,
+    toggleGoalRoadmap, toggleGoalStep, generateGoalRoadmap
+  } = useGoalStore();
 
   useEffect(() => {
-    localStorage.setItem('deenos_goals', JSON.stringify(goals));
-  }, [goals]);
+    syncGoalsData();
+  }, []);
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Goal['category']>('deen');
@@ -50,73 +35,26 @@ export const GoalsPage: React.FC = () => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const newGoal: Goal = {
-      id: crypto.randomUUID(),
-      title,
-      category,
-      roadmap: [],
-      roadmapCompleted: [],
-      showRoadmap: false,
-      generatingPlan: false,
-      deadline: deadline || undefined,
-      priority
-    };
-
-    setGoals([...goals, newGoal]);
+    addGoal(title, category, deadline || undefined, priority);
     setTitle('');
     setDeadline('');
     setPriority('medium');
   };
 
   const handleDeleteGoal = (id: string) => {
-    setGoals(goals.filter(g => g.id !== id));
+    deleteGoal(id);
   };
 
   const handleToggleRoadmap = (goalId: string) => {
-    setGoals(goals.map(g => g.id === goalId ? { ...g, showRoadmap: !g.showRoadmap } : g));
+    toggleGoalRoadmap(goalId);
   };
 
   const handleToggleStep = (goalId: string, stepIdx: number) => {
-    setGoals(goals.map(g => {
-      if (g.id === goalId) {
-        const nextCompleted = [...g.roadmapCompleted];
-        nextCompleted[stepIdx] = !nextCompleted[stepIdx];
-        return { ...g, roadmapCompleted: nextCompleted };
-      }
-      return g;
-    }));
+    toggleGoalStep(goalId, stepIdx);
   };
 
   const handleGenerateRoadmap = async (goalId: string, goalTitle: string, goalCat: string) => {
-    // Set loading
-    setGoals(goals.map(g => g.id === goalId ? { ...g, generatingPlan: true, showRoadmap: true } : g));
-
-    try {
-      const roadmapText = await geminiService.generateGoalRoadmap(goalTitle, goalCat);
-      
-      // Parse markdown checkpoints
-      const steps = roadmapText
-        .split('\n')
-        .filter((line: string) => line.includes('- [ ]') || line.includes('* ') || line.includes('- '))
-        .map((line: string) => line.replace('- [ ]', '').replace('*', '').replace('-', '').trim())
-        .filter((line: string) => line.length > 2)
-        .slice(0, 5); // Take top 5 checkpoints
-
-      setGoals(goals.map(g => {
-        if (g.id === goalId) {
-          return {
-            ...g,
-            roadmap: steps.length > 0 ? steps : ['Set daily trigger slots', 'Log progress in DeenOS', 'Keep consistency for 21 days'],
-            roadmapCompleted: new Array(steps.length || 3).fill(false),
-            generatingPlan: false
-          };
-        }
-        return g;
-      }));
-    } catch (e) {
-      console.error(e);
-      setGoals(goals.map(g => g.id === goalId ? { ...g, generatingPlan: false } : g));
-    }
+    generateGoalRoadmap(goalId, goalTitle, goalCat);
   };
 
   return (
