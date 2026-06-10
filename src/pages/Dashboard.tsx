@@ -8,10 +8,11 @@ import { DeenOrb } from '../components/DeenOrb';
 import { TodayTimeline } from '../components/TodayTimeline';
 import { geminiService } from '../services/gemini';
 import { quranSurahs } from '../lib/quranData';
+import { useCircleStore } from '../store/circleStore';
 import { 
   Sparkles, ArrowRight, BookOpen, Award, X, 
   Droplet, Flame, TrendingUp, PlusCircle, Compass, Wallet, PenTool, Plus, 
-  Activity, Check, ArrowUpRight
+  Activity, Check, ArrowUpRight, Users
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -292,6 +293,68 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
   };
   const lastJournalEntry = getLastJournalEntry();
 
+  // Hijri Date formatting
+  const getHijriDate = () => {
+    try {
+      const formatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+      return formatter.format(new Date());
+    } catch (e) {
+      return "Dhu al-Hijjah 1447 AH";
+    }
+  };
+  const hijriDate = getHijriDate();
+
+  // Moon phase calculation
+  const getMoonPhase = () => {
+    const refDate = new Date('2000-01-06T18:14:00Z').getTime();
+    const diffMs = Date.now() - refDate;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    const moonAge = diffDays % 29.530588853;
+
+    let phaseName = 'New Moon';
+    let svgPath = '';
+
+    if (moonAge < 1.84) {
+      phaseName = 'New Moon';
+      svgPath = 'M 32 8 A 24 24 0 0 0 32 56 A 24 24 0 0 0 32 8';
+    } else if (moonAge < 5.53) {
+      phaseName = 'Waxing Crescent';
+      svgPath = 'M 32 8 A 24 24 0 0 1 32 56 A 20 24 0 0 0 32 8';
+    } else if (moonAge < 9.22) {
+      phaseName = 'First Quarter';
+      svgPath = 'M 32 8 A 24 24 0 0 1 32 56 Z';
+    } else if (moonAge < 12.91) {
+      phaseName = 'Waxing Gibbous';
+      svgPath = 'M 32 8 A 24 24 0 0 1 32 56 A 12 24 0 0 1 32 8 Z M 32 8 A 24 24 0 0 1 32 56 Z';
+    } else if (moonAge < 16.61) {
+      phaseName = 'Full Moon';
+      svgPath = 'M 32 8 A 24 24 0 1 1 31.9 8';
+    } else if (moonAge < 20.3) {
+      phaseName = 'Waning Gibbous';
+      svgPath = 'M 32 8 A 24 24 0 0 0 32 56 A 12 24 0 0 0 32 8 Z M 32 8 A 24 24 0 0 1 32 56 Z';
+    } else if (moonAge < 23.99) {
+      phaseName = 'Last Quarter';
+      svgPath = 'M 32 8 A 24 24 0 0 0 32 56 Z';
+    } else if (moonAge < 27.68) {
+      phaseName = 'Waning Crescent';
+      svgPath = 'M 32 8 A 24 24 0 0 0 32 56 A 20 24 0 0 1 32 8';
+    } else {
+      phaseName = 'New Moon';
+      svgPath = 'M 32 8 A 24 24 0 0 0 32 56 A 24 24 0 0 0 32 8';
+    }
+
+    return { phaseName, svgPath };
+  };
+  const moon = getMoonPhase();
+
+  // Circle store
+  const { circles } = useCircleStore();
+  const mainCircle = circles[0];
+
   return (
     <div className="space-y-6 select-none pb-12">
       {/* 1. TOP INTERACTIVE BRANDING & STREAK BANNER */}
@@ -435,6 +498,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
               </div>
             )}
           </div>
+
+          {/* C. Hijri Planner & Moon Phase Card */}
+          <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40 flex flex-col justify-between relative overflow-hidden animate-pulse-slow">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-radial-gradient from-amber-500/10 to-transparent blur-2xl rounded-full pointer-events-none" />
+            <div className="flex justify-between items-start mb-4 relative z-10">
+              <div>
+                <h3 className="text-sm font-black text-text-primary tracking-tight">Lunar Calendar</h3>
+                <p className="text-[10px] text-text-secondary mt-0.5">Hijri date & current moon phase</p>
+              </div>
+              <button 
+                onClick={() => setActiveTab('ramadan')}
+                className="p-1 px-2.5 rounded bg-amber-500/10 text-amber-500 text-[10px] font-bold hover:bg-amber-500/20 transition cursor-pointer flex items-center gap-1"
+              >
+                Open Planner <ArrowUpRight size={10} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between mt-1 relative z-10">
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-black text-amber-500 tracking-wider">Islamic Date</span>
+                <h4 className="text-base font-black text-text-primary tracking-tight">
+                  {hijriDate}
+                </h4>
+                <p className="text-[10px] text-text-muted">
+                  Phase: <span className="font-bold text-text-secondary">{moon.phaseName}</span>
+                </p>
+              </div>
+
+              <div className="shrink-0 flex items-center justify-center relative">
+                <div className="absolute w-14 h-14 bg-amber-500/10 rounded-full blur-md" />
+                <svg className="w-14 h-14 drop-shadow-[0_0_10px_rgba(245,158,11,0.25)] relative z-10" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="24" fill="var(--bg-tertiary)" stroke="var(--border-color)" strokeWidth="1" />
+                  <path d={moon.svgPath} fill="#f59e0b" opacity="0.95" />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ================= COLUMN 2: AI GUIDANCE & AREA ANALYTICS CHART ================= */}
@@ -554,47 +654,93 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
       {/* 3. LOWER DASHBOARD GRID: SALAH TRACKER checklist, ACTIVITY DECK & TIMELINE */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         
-        {/* A. SALAH TRACKER CHECKLIST WIDGET */}
-        <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40">
-          <div className="flex justify-between items-center mb-5">
-            <div>
-              <h3 className="text-sm font-black text-text-primary tracking-tight">Salah Tracker</h3>
-              <p className="text-[10px] text-text-secondary mt-0.5">Today's completed prayers</p>
+        {/* COLUMN 1: SALAH TRACKER & COMMUNITY CIRCLES */}
+        <div className="space-y-6">
+          {/* A. SALAH TRACKER CHECKLIST WIDGET */}
+          <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40">
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <h3 className="text-sm font-black text-text-primary tracking-tight">Salah Tracker</h3>
+                <p className="text-[10px] text-text-secondary mt-0.5">Today's completed prayers</p>
+              </div>
+              <button 
+                onClick={() => setActiveTab('salah')}
+                className="p-1 px-2.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition cursor-pointer flex items-center gap-1"
+              >
+                Open Tracker <ArrowUpRight size={10} />
+              </button>
             </div>
-            <button 
-              onClick={() => setActiveTab('salah')}
-              className="p-1 px-2.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition cursor-pointer flex items-center gap-1"
-            >
-              Open Tracker <ArrowUpRight size={10} />
-            </button>
+
+            <div className="space-y-3">
+              {obligatoryPrayers.map((p) => {
+                const status = getPrayerStatus(p.key);
+                const isLogged = !!status;
+                
+                return (
+                  <div 
+                    key={p.key} 
+                    className={`flex items-center justify-between p-3 rounded-2xl border transition duration-200 ${
+                      isLogged 
+                        ? 'border-primary/20 bg-primary/[0.02]' 
+                        : 'border-border-color bg-bg-secondary/20 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base select-none">{getPrayerIcon(status)}</span>
+                      <span className="text-xs font-bold text-text-primary">{p.label}</span>
+                    </div>
+                    
+                    <span className={`px-2.5 py-1 rounded-xl border text-[9px] font-extrabold transition-all duration-300 ${getPrayerColor(status)}`}>
+                      {getPrayerLabel(status)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {obligatoryPrayers.map((p) => {
-              const status = getPrayerStatus(p.key);
-              const isLogged = !!status;
-              
-              return (
-                <div 
-                  key={p.key} 
-                  className={`flex items-center justify-between p-3 rounded-2xl border transition duration-200 ${
-                    isLogged 
-                      ? 'border-primary/20 bg-primary/[0.02]' 
-                      : 'border-border-color bg-bg-secondary/20 opacity-70 hover:opacity-100'
-                  }`}
+          {/* B. COMMUNITY CIRCLES WIDGET */}
+          {mainCircle && (
+            <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40 flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-radial-gradient from-primary/10 to-transparent blur-2xl rounded-full pointer-events-none" />
+              <div className="flex justify-between items-center mb-4 relative z-10">
+                <div className="flex items-center gap-2">
+                  <Users className="text-primary" size={18} />
+                  <h3 className="text-sm font-black text-text-primary tracking-tight">Community Circles</h3>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('circles')}
+                  className="p-1 px-2.5 rounded bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition cursor-pointer flex items-center gap-1"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-base select-none">{getPrayerIcon(status)}</span>
-                    <span className="text-xs font-bold text-text-primary">{p.label}</span>
-                  </div>
-                  
-                  <span className={`px-2.5 py-1 rounded-xl border text-[9px] font-extrabold transition-all duration-300 ${getPrayerColor(status)}`}>
-                    {getPrayerLabel(status)}
+                  View Circles <ArrowUpRight size={10} />
+                </button>
+              </div>
+
+              <div className="space-y-3.5 relative z-10">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase font-black text-text-muted tracking-wider">{mainCircle.name}</span>
+                  <span className="text-[9px] bg-primary/15 border border-primary/20 text-primary font-bold px-1.5 py-0.5 rounded-md">
+                    Khatm: {Math.round(mainCircle.sharedKhatmProgress)}%
                   </span>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="space-y-2">
+                  {mainCircle.members.slice(1, 4).map((member) => (
+                    <div key={member.name} className="flex items-center justify-between text-xs p-1.5 rounded-lg bg-bg-secondary/30 border border-border-color/40">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{member.avatar}</span>
+                        <span className="font-bold text-text-secondary truncate max-w-[100px]">{member.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Flame className="text-orange-500 animate-pulse-slow" size={13} />
+                        <span className="font-black text-text-primary text-[10px]">{member.streak} Days</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* B. SPIRITUAL FOCUS EXECUTIVE ACTIVITY DECK */}

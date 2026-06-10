@@ -15,6 +15,7 @@ import { JournalPage } from './pages/JournalPage';
 import { AICoachPage } from './pages/AICoachPage';
 import { RamadanPage } from './pages/RamadanPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { CirclesPage } from './pages/CirclesPage';
 
 import { useDeenStore } from './store/deenStore';
 import { useHabitStore } from './store/habitStore';
@@ -80,6 +81,8 @@ function App() {
         return <RamadanPage />;
       case 'profile':
         return <ProfilePage />;
+      case 'circles':
+        return <CirclesPage setActiveTab={setActiveTab} />;
       default:
         return <Dashboard setActiveTab={setActiveTab} />;
     }
