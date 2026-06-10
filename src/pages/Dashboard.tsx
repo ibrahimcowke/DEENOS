@@ -12,7 +12,7 @@ import { useCircleStore } from '../store/circleStore';
 import { 
   Sparkles, ArrowRight, BookOpen, Award, X, 
   Droplet, Flame, TrendingUp, PlusCircle, Compass, Wallet, PenTool, Plus, 
-  Activity, Check, ArrowUpRight, Users
+  Activity, Check, ArrowUpRight, Users, Leaf
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +20,54 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid 
 } from 'recharts';
 import confetti from 'canvas-confetti';
+
+interface ReflectionSection {
+  title: string;
+  content: string;
+  type: 'reflection' | 'verse' | 'tip' | 'habit' | 'general';
+}
+
+const parseReflections = (text: string): ReflectionSection[] => {
+  if (!text) return [];
+  
+  const parts = text.split(/###\s+/);
+  const sections: ReflectionSection[] = [];
+  
+  parts.forEach(part => {
+    if (!part.trim()) return;
+    
+    const lines = part.split('\n');
+    const rawHeader = lines[0].trim();
+    const content = lines.slice(1).join('\n').trim();
+    
+    const title = rawHeader.replace(/\*\*/g, '').trim();
+    if (!title) return;
+    
+    let type: ReflectionSection['type'] = 'general';
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('reflection')) {
+      type = 'reflection';
+    } else if (lowerTitle.includes('verse') || lowerTitle.includes('contemplation')) {
+      type = 'verse';
+    } else if (lowerTitle.includes('tip') || lowerTitle.includes('prophetic') || lowerTitle.includes('saying')) {
+      type = 'tip';
+    } else if (lowerTitle.includes('habit') || lowerTitle.includes('improvement')) {
+      type = 'habit';
+    }
+    
+    sections.push({ title, content, type });
+  });
+  
+  if (sections.length === 0 && text.trim()) {
+    sections.push({
+      title: 'Spiritual Reflection',
+      content: text.trim(),
+      type: 'reflection'
+    });
+  }
+  
+  return sections;
+};
 
 interface DashboardProps {
   setActiveTab: (tab: string) => void;
@@ -543,31 +591,96 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
           {/* A. Gemini AI Daily Reflections Card */}
           <div className="glass-card border border-border-color/80 rounded-3xl p-6 bg-bg-secondary/40 flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-5">
                 <Sparkles className="text-primary animate-pulse" size={20} />
                 <h3 className="text-lg font-black text-text-primary tracking-tight">AI Daily reflections</h3>
               </div>
               
-              <div className="space-y-3.5 text-xs leading-relaxed text-text-secondary overflow-y-auto max-h-[160px] pr-2">
+              <div className="space-y-4">
                 {loadingAi ? (
-                  <div className="flex flex-col gap-2 py-8 items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span className="text-[10px] text-text-muted">{t('dashboard.generating_reflections')}</span>
+                  <div className="flex flex-col gap-2 py-12 items-center justify-center">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs text-text-muted">{t('dashboard.generating_reflections')}</span>
                   </div>
                 ) : (
                   aiGuidance ? (
-                    aiGuidance.split('\n').map((line, idx) => {
-                      if (line.startsWith('### ')) {
-                        return <h4 key={idx} className="font-extrabold text-xs text-primary uppercase tracking-widest mt-3 mb-1">{line.substring(4)}</h4>;
-                      }
-                      if (line.startsWith('* ') || line.startsWith('- ')) {
-                        return <li key={idx} className="ml-3 list-disc my-0.5 text-text-secondary font-medium">{line.substring(2)}</li>;
-                      }
-                      if (line.startsWith('> ')) {
-                        return <blockquote key={idx} className="border-l-2 border-primary pl-2.5 italic my-2 text-text-muted bg-primary/5 py-1 rounded-r">{line.substring(2)}</blockquote>;
-                      }
-                      return <p key={idx} className="font-medium">{line}</p>;
-                    })
+                    (() => {
+                      const sections = parseReflections(aiGuidance);
+                      return (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {sections.map((sec, idx) => {
+                            let icon = <Sparkles size={16} />;
+                            let accentColor = 'text-primary bg-primary/5 border-primary/15';
+                            let glowStyle = 'from-primary/10 to-transparent';
+                            
+                            let cleanContent = sec.content;
+                            if (sec.type === 'verse') {
+                              icon = <BookOpen size={16} />;
+                              accentColor = 'text-amber-500 bg-amber-500/5 border-amber-500/15';
+                              glowStyle = 'from-amber-500/10 to-transparent';
+                              cleanContent = cleanContent
+                                .replace(/^>\s*/, '')
+                                .replace(/^"\s*/, '')
+                                .replace(/"\s*$/, '');
+                            } else if (sec.type === 'tip') {
+                              icon = <Compass size={16} />;
+                              accentColor = 'text-cyan-500 bg-cyan-500/5 border-cyan-500/15';
+                              glowStyle = 'from-cyan-500/10 to-transparent';
+                              cleanContent = cleanContent
+                                .replace(/^[\*\-\+]\s*/, '')
+                                .replace(/^"\s*/, '')
+                                .replace(/"\s*$/, '');
+                            } else if (sec.type === 'habit') {
+                              icon = <Leaf size={16} />;
+                              accentColor = 'text-emerald-500 bg-emerald-500/5 border-emerald-500/15';
+                              glowStyle = 'from-emerald-500/10 to-transparent';
+                              cleanContent = cleanContent
+                                .replace(/^[\*\-\+]\s*/, '');
+                            } else if (sec.type === 'reflection') {
+                              icon = <Sparkles size={16} />;
+                              accentColor = 'text-primary bg-primary/5 border-primary/15';
+                              glowStyle = 'from-primary/10 to-transparent';
+                            }
+                            
+                            const colSpan = sec.type === 'reflection' ? 'md:col-span-2' : '';
+                            
+                            return (
+                              <div 
+                                key={idx} 
+                                className={`glass border border-border-color/40 rounded-2xl p-4 bg-bg-tertiary/10 flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:border-border-color/80 hover:shadow-lg hover:scale-[1.005] ${colSpan}`}
+                              >
+                                <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl ${glowStyle} blur-xl rounded-full pointer-events-none opacity-40`} />
+                                
+                                <div className="relative z-10 flex flex-col h-full justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`p-1.5 rounded-lg border flex items-center justify-center ${accentColor}`}>
+                                      {icon}
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-text-primary">
+                                      {sec.title}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="text-xs leading-relaxed text-text-secondary font-medium">
+                                    {sec.type === 'verse' ? (
+                                      <p className="italic font-serif text-[13px] text-amber-500/90 leading-relaxed border-l-2 border-amber-500/40 pl-3 py-0.5 my-1">
+                                        "{cleanContent}"
+                                      </p>
+                                    ) : sec.type === 'tip' ? (
+                                      <p className="italic text-cyan-500/90 leading-relaxed border-l-2 border-cyan-500/40 pl-3 py-0.5 my-1">
+                                        "{cleanContent}"
+                                      </p>
+                                    ) : (
+                                      <p className="leading-relaxed">{cleanContent}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()
                   ) : (
                     <p className="italic text-text-muted text-center py-6">Reflections will show when activities are logged.</p>
                   )
