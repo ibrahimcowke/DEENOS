@@ -11,6 +11,7 @@ interface TimelineItem {
   time: string;
   displayTime: string;
   title: string;
+  subtitle?: string;
   type: 'prayer' | 'habit' | 'subscription' | 'journal';
   status: 'completed' | 'pending' | 'warning';
 }
@@ -22,6 +23,19 @@ export const TodayTimeline: React.FC = () => {
   const { subscriptions } = useFinanceStore();
 
   const today = new Date().toISOString().split('T')[0];
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'jamaah_mosque': return "Mosque (Jama'ah)";
+      case 'individual_mosque': return "Mosque (Indiv)";
+      case 'completed': return 'Home (Individual)';
+      case 'delayed': return 'Delayed';
+      case 'missed': return 'Missed';
+      case 'outside': return 'Outside';
+      case 'individual_outside': return 'Outside (Indiv)';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
 
   // 1. Core Prayers Schedule
   const prayerTimes = [
@@ -52,7 +66,8 @@ export const TodayTimeline: React.FC = () => {
       id: `prayer-${p.key}`,
       time: p.order,
       displayTime: p.time,
-      title: `${p.label} Prayer ${log ? `(${log.status.toUpperCase()})` : ''}`,
+      title: `${p.label} Prayer`,
+      subtitle: log ? getStatusLabel(log.status) : 'Pending log',
       type: 'prayer',
       status: completed ? 'completed' : log?.status === 'missed' ? 'warning' : 'pending'
     });
@@ -61,7 +76,6 @@ export const TodayTimeline: React.FC = () => {
   // Add active habits
   habits.forEach((habit) => {
     const doneToday = habit.lastCompletedDate === today;
-    // Spread habits out at a mock morning or evening slots depending on ID length
     const isMorning = habit.name.length % 2 === 0;
     
     items.push({
@@ -69,6 +83,7 @@ export const TodayTimeline: React.FC = () => {
       time: isMorning ? '06:00' : '17:30',
       displayTime: isMorning ? '06:00 AM' : '05:30 PM',
       title: habit.name,
+      subtitle: doneToday ? 'Watered & Completed ✓' : 'Needs water today 💧',
       type: 'habit',
       status: doneToday ? 'completed' : 'pending'
     });
@@ -83,7 +98,8 @@ export const TodayTimeline: React.FC = () => {
           id: `sub-${sub.id}`,
           time: '09:00',
           displayTime: '09:00 AM',
-          title: `Renewal: ${sub.name} ($${sub.price})`,
+          title: sub.name,
+          subtitle: `Renewal due today: $${sub.price}`,
           type: 'subscription',
           status: 'warning'
         });
@@ -94,6 +110,40 @@ export const TodayTimeline: React.FC = () => {
   // Sort chronologically
   const sortedItems = items.sort((a, b) => a.time.localeCompare(b.time));
 
+  // Find where current time fits in sortedItems
+  const curHour = new Date().getHours();
+  const curMin = new Date().getMinutes();
+  const curTimeString = `${curHour.toString().padStart(2, '0')}:${curMin.toString().padStart(2, '0')}`;
+  
+  const tempDate = new Date();
+  tempDate.setHours(curHour);
+  tempDate.setMinutes(curMin);
+  const displayTimeString = tempDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+  const renderedItems: (TimelineItem | { isNowMarker: boolean; time: string; displayTime: string })[] = [];
+  let nowInserted = false;
+
+  for (let i = 0; i < sortedItems.length; i++) {
+    const item = sortedItems[i];
+    if (!nowInserted && curTimeString < item.time) {
+      renderedItems.push({
+        isNowMarker: true,
+        time: curTimeString,
+        displayTime: displayTimeString
+      });
+      nowInserted = true;
+    }
+    renderedItems.push(item);
+  }
+
+  if (!nowInserted) {
+    renderedItems.push({
+      isNowMarker: true,
+      time: curTimeString,
+      displayTime: displayTimeString
+    });
+  }
+
   const getItemIcon = (status: TimelineItem['status']) => {
     switch (status) {
       case 'completed':
@@ -102,7 +152,7 @@ export const TodayTimeline: React.FC = () => {
         return <AlertCircle className="text-warning fill-warning/10" size={16} />;
       case 'pending':
       default:
-        return <Circle className="text-text-muted" size={16} />;
+        return <Circle className="text-text-muted opacity-60" size={16} />;
     }
   };
 
@@ -114,11 +164,6 @@ export const TodayTimeline: React.FC = () => {
       case 'journal': return 'bg-info/10 border-info/20 text-info';
     }
   };
-
-  // Get current hour for static timeline indicator alignment
-  const curHour = new Date().getHours();
-  const curMin = new Date().getMinutes();
-  const curTimeString = `${curHour.toString().padStart(2, '0')}:${curMin.toString().padStart(2, '0')}`;
 
   return (
     <div className="flex flex-col p-6 glass border border-border-color rounded-2xl w-full h-full">
@@ -132,43 +177,65 @@ export const TodayTimeline: React.FC = () => {
         </span>
       </div>
 
-      <div className="relative pl-6 border-l-2 border-border-color space-y-6 flex-1 max-h-[450px] overflow-y-auto pr-2">
-        {/* Floating Now indicator based on real-time hours */}
-        <div className="absolute left-[-7px] top-[180px] flex items-center gap-2 z-10 pointer-events-none">
-          <div className="w-3 h-3 rounded-full bg-accent animate-ping absolute" />
-          <div className="w-3 h-3 rounded-full bg-accent border-2 border-bg-primary" />
-          <span className="bg-accent text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow ml-1 uppercase tracking-widest">
-            Now ({curTimeString})
-          </span>
-        </div>
-
-        {sortedItems.length === 0 ? (
+      <div className="relative pl-6 border-l-2 border-border-color space-y-5 flex-1 max-h-[450px] overflow-y-auto pr-2">
+        {renderedItems.length === 1 && 'isNowMarker' in renderedItems[0] && sortedItems.length === 0 ? (
           <p className="text-xs text-text-muted text-center py-12">Timeline is empty. Log a prayer to populate today.</p>
         ) : (
-          sortedItems.map((item) => (
-            <div key={item.id} className="relative flex items-start gap-4 group">
-              <div className="absolute left-[-31px] top-1 bg-bg-primary p-1 rounded-full border border-border-color group-hover:border-primary transition">
-                {getItemIcon(item.status)}
-              </div>
+          renderedItems.map((item) => {
+            if ('isNowMarker' in item) {
+              return (
+                <div key="now-marker" className="relative flex items-center my-4 group">
+                  {/* Pulsing glow dot positioned exactly on the vertical line */}
+                  <div className="absolute left-[-31px] bg-accent p-1 rounded-full border-2 border-bg-primary shadow-[0_0_10px_var(--accent)] z-10 animate-pulse">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                  </div>
+                  
+                  {/* Left current time display */}
+                  <div className="text-[10px] font-black text-accent w-20 shrink-0 select-none tracking-wider uppercase animate-pulse">
+                    Now ({item.displayTime})
+                  </div>
 
-              <div className="text-xs font-semibold text-text-secondary w-20 pt-0.5 shrink-0 select-none">
-                {item.displayTime}
-              </div>
+                  {/* Horizontal glowing dashed divider */}
+                  <div className="flex-1 border-t-2 border-dashed border-accent/40 relative flex items-center">
+                    <div className="absolute right-0 h-1 w-1 rounded-full bg-accent animate-ping" />
+                  </div>
+                </div>
+              );
+            }
 
-              <div className="flex-1 p-3.5 rounded-xl border border-border-color/60 bg-bg-secondary/40 hover:bg-bg-secondary transition flex items-center justify-between shadow-sm">
-                <span className="text-sm font-semibold text-text-primary">
-                  {item.title}
-                </span>
-                
-                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${getTypeColor(item.type)}`}>
-                  {item.type}
-                </span>
+            return (
+              <div key={item.id} className="relative flex items-start gap-4 group">
+                <div className="absolute left-[-31px] top-1 bg-bg-primary p-1 rounded-full border border-border-color group-hover:border-primary transition duration-200 z-10">
+                  {getItemIcon(item.status)}
+                </div>
+
+                <div className="text-xs font-semibold text-text-secondary w-20 pt-1.5 shrink-0 select-none group-hover:text-text-primary transition-colors">
+                  {item.displayTime}
+                </div>
+
+                <div className="flex-1 p-3.5 rounded-xl border border-border-color/60 bg-bg-secondary/40 hover:bg-bg-secondary hover:border-primary/20 transition-all duration-200 flex items-center justify-between shadow-sm relative overflow-hidden">
+                  <div className="flex flex-col min-w-0 pr-2">
+                    <span className="text-sm font-bold text-text-primary truncate">
+                      {item.title}
+                    </span>
+                    {item.subtitle && (
+                      <span className="text-[10px] text-text-muted mt-0.5 font-medium">
+                        {item.subtitle}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-md border shrink-0 tracking-wider ${getTypeColor(item.type)}`}>
+                    {item.type}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
   );
 };
+
 export default TodayTimeline;
